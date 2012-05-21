@@ -1,0 +1,9 @@
+#!/usr/bin/perl -w
+
+my $str;
+foreach (`ls|grep -Pv '.*\.(sh|pl)\~?\$'`) {
+    chomp;
+    $str .= "include=dao/$_ ";
+}
+
+print $str;

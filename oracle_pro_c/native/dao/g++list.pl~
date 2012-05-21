@@ -1,0 +1,5 @@
+#!/bin/bash
+
+str=" "
+ls|grep -Pv '.*\.(sh|pl)\~?$'|while read x; do str="$str $x/$x.cpp $x/\"$x\"Dao.cpp"; done;
+echo $str

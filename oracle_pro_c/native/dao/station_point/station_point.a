@@ -1,0 +1,824 @@
+!<arch>
+//                                              180       `
+station_point.cpp/
+station_pointDao.h/
+station_pointDao.pcpp/
+station_pointDao-test.pcpp/
+station_point.cpp/
+station_pointDao.h/
+station_pointDao.pcpp/
+station_pointDao-test.pcpp/
+station_point.h/1336499769  1001  1001  100644  476       `
+#include"../types.h"
+
+#ifndef __RSMC_H__
+#define __RSMC_H__
+
+namespace nrs {
+
+  class rsmc {
+    ull rsmcId;
+    us  rsmcType;
+    char *rsmcName;
+  
+  public:
+    //constructor with no parameters
+    //for the java pojo classes ideology
+    rsmc();
+  
+    //standart getters and setter for class fields
+    ull getId();
+    void setId(const ull id);
+    us  getType();
+    void setType(const us type);
+    char *getName();
+    void setName(const char *name);
+  };
+
+}
+
+#endif
+/0              1336499769  1001  1001  100644  598       `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include"rsmc.h"
+
+namespace nrs {
+
+  rsmc::rsmc()
+  {
+    rsmcName = new char[21];
+  
+    for (int i = 0; i < 21; ++i)
+      rsmcName[i] = '\0';
+  }  
+
+  ull rsmc::getId()
+  {
+    return rsmcId;
+  }
+
+  void rsmc::setId(ull id)
+  {
+    rsmcId = id;
+  }
+
+  char *rsmc::getName()
+  {
+    return rsmcName;
+  }
+
+  void rsmc::setName(const char *name)
+  {
+    if (strlen(name) > 20)
+      return;
+
+    strcpy(rsmcName, name);
+  }
+
+  us rsmc::getType()
+  {
+    return rsmcType;
+  }
+
+  void  rsmc::setType(const us type)
+  {
+    rsmcType = type;
+  }
+
+}
+/19             1336499769  1001  1001  100644  595       `
+#include"../types.h"
+#include "rsmc.h"
+
+#ifndef __RSMCDAO_H__
+#define __RSMCDAO_H__
+
+namespace nrs {
+
+  class rsmcDao {
+    //copying parameters
+    ull  cid;
+    us   ctype;
+    char cname[21];
+  
+    void copy(rsmc *rs);
+    void acopy(rsmc *ars, int size_a);
+  public:
+    //scalar case
+    rsmc *findById(ull id);
+    void insert(rsmc *rs);
+    void update(rsmc *rs);
+    void remove(rsmc *rs);
+    //vector case
+    rsmc *findById(ull *aid, int size_a);
+    void insert(rsmc *ars, int size_a);
+    void update(rsmc *ars, int size_a);
+    void remove(rsmc *ars, int size_a);
+  };
+
+}
+
+#endif
+
+/39             1336499769  1001  1001  100644  4004      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"rsmc.h"
+#include"rsmcDao.h"
+#include"../main.h"
+
+namespace nrs {
+
+#include<sqlca.h>
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t;
+  varchar c20_t[20];
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t[100];
+  varchar ac20_t[100][20];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void rsmcDao::copy(rsmc *rs)
+  {
+    char *name = rs->getName();
+    ull_t = rs->getId();
+    for (int i = 0; i < 19; ++i)
+      c20_t.arr[i] = name[i];
+    c20_t.arr[19] = '\0';
+    c20_t.len = strlen(c20_t.arr);
+    us_t  = rs->getType();
+  }
+
+  void rsmcDao::acopy(rsmc *ars, int size_a)
+  {
+    char *name;
+
+    for (int i = 0; i < size_a; ++i) {
+      name = ars[i].getName();
+      aull_t[i] = ars[i].getId();
+      for (int j = 0; j < 19; ++j)
+      ac20_t[i].arr[j] = name[j];
+      ac20_t[i].arr[19] = '\0';
+      ac20_t[i].len = strlen(ac20_t[i].arr);
+      //cout << ars[i].getName() << " --- " << ac20_t[i].arr << endl;
+      aus_t[i]  = ars[i].getType();
+    }
+  }
+ 
+  rsmc *rsmcDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT rsmc_type, rsmc_name INTO :us_t, :c20_t FROM rsmc WHERE rsmc_id = :ull_t;
+
+    //copy values to local variables
+    cid = ull_t;
+    for (int i = 0; i < 20; ++i)
+      cname[i] = c20_t.arr[i];
+    cname[20] = '\0';
+    ctype = us_t;
+  
+    //set new object with selected values
+    rsmc *rs = new rsmc();
+    rs->setId(cid);
+    rs->setType(ctype);
+    rs->setName(cname); 
+
+    //printf("result - id = %llu name = %s type = %u\n", rs->getId(), rs->getName(), rs->getType());
+    return rs;
+  }
+
+  void rsmcDao::insert(rsmc *rs)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(rs);
+    EXEC SQL INSERT INTO rsmc VALUES(:ull_t, :c20_t, :us_t);
+    //EXEC SQL COMMIT;
+  }
+
+  void rsmcDao::update(rsmc *rs)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(rs);
+    EXEC SQL UPDATE rsmc SET rsmc_name=:c20_t, rsmc_type=:us_t WHERE rsmc_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void rsmcDao::remove(rsmc *rs)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(rs);
+    EXEC SQL DELETE FROM rsmc WHERE rsmc_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  rsmc *rsmcDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT rsmc_type, rsmc_name INTO :aus_t, :ac20_t FROM rsmc WHERE rsmc_id = :aull_t;
+
+    rsmc *rs, *ars = new rsmc[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      rs = findById(aid[i]);
+      //set new object with selected values
+      ars[i].setId(rs->getId());
+      ars[i].setName(rs->getName());  
+      ars[i].setType(rs->getType());
+   }
+    
+    return ars;
+  }
+
+  void rsmcDao::insert(rsmc *ars, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(ars, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO rsmc
+      VALUES(:aull_t, :ac20_t,:aus_t);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << ars[i].getName() << endl;
+    // }
+  }
+
+  void rsmcDao::update(rsmc *ars, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(ars, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE rsmc SET
+      rsmc_name=:ac20_t, rsmc_type=:aus_t 
+      WHERE rsmc_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void rsmcDao::remove(rsmc *ars, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(ars, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM rsmc
+      WHERE rsmc_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}
+/62             1336499769  1001  1001  100644  2261      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"../types.h"
+#include"rsmc.h"
+#include"rsmcDao.h"
+#include<sqlca.h>
+
+using namespace nrs;
+using namespace std;
+
+EXEC SQL BEGIN DECLARE SECTION;
+varchar log_pass[40];
+EXEC SQL END DECLARE SECTION;
+
+void pres(rsmc *rs)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  printf("|  %-5d ", rs->getId());
+  printf("|  %-20s |", rs->getName());
+  printf("  %-10u     |\n", rs->getType());
+  printf("--------------------------------------------------\n");
+}
+
+void pres(rsmc *ars, int size_a)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  for (int i = 0; i < size_a; ++i) {
+    printf("|  %-5d ", ars[i].getId());
+    printf("|  %-20s |", ars[i].getName());
+    printf("  %-10u     |\n", ars[i].getType());
+  }
+  printf("--------------------------------------------------\n");
+}
+
+void init_test_rsmc(rsmc *ars, char *name, ull *indices, int size_a)
+{
+  for (int i = 0; i < 21; ++i)
+    name[i] = '\0';
+
+  for (int i = 1; i < 10; ++i) {
+    ars[i].setId(i);
+    sprintf(name, "%d", i);
+    //cout << name << endl;
+    ars[i].setName(name); 
+    ars[i].setType(i);
+    indices[i-1] = i-1;
+  }
+
+  indices[size_a-1] = size_a - 1;
+}
+
+void test_rsmc()
+{
+  rsmc *rs, *ars = new rsmc[10];
+  rsmcDao *rsd = new rsmcDao();
+  //vector<rsmc> vrs(10);
+  char name[20];
+  ull *indices = new ull[10];
+
+  rs = new rsmc();
+  rs->setId(1);
+  rs->setName("tunoshna_station");
+  rs->setType(0);
+  rsd->insert(rs);
+  delete rs;
+  pres(rs = rsd->findById(1));
+  rs->setType(1);
+  rsd->update(rs);
+  pres(rs = rsd->findById(1));
+  rsd->remove(rs);
+  //EXEC SQL COMMIT WORK RELEASE;
+
+  init_test_rsmc(ars, name, indices, 10);
+  rsd->insert(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  for (int i = 1; i < 10; ++i) { 
+    ars[i].setType(i + 10);
+  }
+
+  rsd->update(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  rsd->remove(ars, 10);
+}
+
+int main()
+{
+  strcpy(log_pass.arr,"system/manager");
+  log_pass.len = strlen(log_pass.arr);
+  EXEC SQL CONNECT :log_pass;
+  printf("connection open\n");
+  test_rsmc();
+  EXEC SQL COMMIT;
+  printf("connection closed\n");
+  
+  return 0;
+}
+
+station_point.h/1336522714  1001  1001  100644  753       `
+#include"../../types.h"
+
+#ifndef __STATIONPOINT_H__
+#define __STATIONPOINT_H__
+
+namespace nsp {
+
+  class stationPoint {
+    ull stationPointId;
+    us pointId;
+    double latitude;
+    double longitude;
+    double seaHeight;
+  
+  public:
+    //constructor with no parameters
+    //for the java pojo classes ideology
+    stationPoint();
+    ~stationPoint();
+
+    //standart getters and setter for class fields
+    ull getId();
+    void setId(const ull id);
+    us  getPointId();
+    void setPointId(const ull pointId);
+    double getLatitude();
+    void setLatitude(const double latitude);
+    double getLongitude();
+    void setLongitude(const double longitude);
+    double getSeaHeight();
+    void setSeaHeight(const double seaHeight);
+  };
+
+}
+
+#endif
+
+/90             1336522704  1001  1001  100644  970       `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include"station_point.h"
+
+namespace nsp {
+
+  stationPoint::stationPoint()
+  {
+  }  
+
+  stationPoint::~stationPoint()
+  {
+  }
+
+  ull stationPoint::getId()
+  {
+    return stationPointId;
+  }
+
+  void stationPoint::setId(ull id)
+  {
+    stationPointId = id;
+  }
+
+  us stationPoint::getPointId()
+  {
+    return pointId;
+  }
+
+  void  stationPoint::setPointId(const ull pointId)
+  {
+    this->pointId = pointId;
+  }
+
+  double stationPoint::getLatitude()
+  {
+    return latitude;
+  }
+
+  void  stationPoint::setLatitude(const double latitude)
+  {
+    this->latitude = latitude;
+  }
+
+  double stationPoint::getLongitude()
+  {
+    return longitude;
+  }
+
+  void  stationPoint::setLongitude(const double longitude)
+  {
+    this->longitude = longitude;
+  }
+
+  double stationPoint::getSeaHeight()
+  {
+    return seaHeight;
+  }
+
+  void  stationPoint::setSeaHeight(const double seaHeight)
+  {
+    this->seaHeight = seaHeight;
+  }
+
+}
+/109            1336522769  1001  1001  100644  804       `
+#include"../../types.h"
+#include "station_point.h"
+
+#ifndef __STATIONPOINTDAO_H__
+#define __STATIONPOINTDAO_H__
+
+namespace nsp {
+
+  class stationPointDao {
+    //copying parameters
+    ull  cId;
+    us cPointId;
+    char cDateTime[20];
+    us cPrediction;
+    double cLatitude;
+    double cLongitude;
+    double cSeaHeight;
+  
+    void copy(stationPoint *sp);
+    void acopy(stationPoint *asp, int size_a);
+  public:
+    //scalar case
+    stationPoint *findById(ull id);
+    void insert(stationPoint *sp);
+    void update(stationPoint *sp);
+    void remove(stationPoint *sp);
+    //vector case
+    stationPoint *findById(ull *aid, int size_a);
+    void insert(stationPoint *asp, int size_a);
+    void update(stationPoint *asp, int size_a);
+    void remove(stationPoint *asp, int size_a);
+  };
+
+}
+
+#endif
+/129            1336523891  1001  1001  100644  4607      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"station_point.h"
+#include"station_pointDao.h"
+#include"../../main.h"
+
+namespace nsp {
+
+#include<sqlca.h>
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t;
+  double d_t_1;
+  double d_t_2;
+  double d_t_3;
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t[100];
+  double ad_t_1[100];
+  double ad_t_2[100];
+  double ad_t_3[100];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void stationPointDao::copy(stationPoint *sp)
+  {
+    ull_t = sp->getId();
+    us_t = sp->getPointId();
+    d_t_1 = sp->getLatitude();
+    d_t_2 = sp->getLongitude();
+    d_t_3 = sp->getSeaHeight();
+  }
+
+  void stationPointDao::acopy(stationPoint *asp, int size_a)
+  {
+    for (int i = 0; i < size_a; ++i) {
+      aull_t[i] = asp[i].getId();
+      aus_t[i] = asp[i].getPointId();
+      ad_t_1[i] = asp[i].getLatitude();
+      ad_t_2[i] = asp[i].getLongitude();
+      ad_t_3[i] = asp[i].getSeaHeight();
+    }
+  }
+ 
+  stationPoint *stationPointDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT      
+      point_id,
+      latitude,
+      longitude,
+      sea_height
+      INTO :us_t, :d_t_1, :d_t_2, :d_t_3 
+      FROM station_point
+      WHERE point_id = :ull_t;
+
+    //copy values to local variables
+    cId = ull_t;
+    cPointId = us_t;
+    cLatitude = d_t_1;
+    cLongitude  = d_t_2;
+    cSeaHeight  = d_t_3;
+
+    //set new object with selected values
+    stationPoint *sp = new stationPoint();
+    sp->setId(cId);
+    sp->setPointId(cPointId);
+    sp->setLatitude(cLatitude);
+    sp->setLongitude(cLongitude);
+    sp->setSeaHeight(cSeaHeight);
+
+    //printf("result - id = %llu name = %s type = %u\n", sp->getId(), sp->getName(), sp->getType());
+    return sp;
+  }
+
+  void stationPointDao::insert(stationPoint *sp)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(sp);
+    EXEC SQL INSERT INTO station_point 
+      VALUES(:ull_t, :us_t, :d_t_1, :d_t_2, :d_t_3);
+    //EXEC SQL COMMIT;
+  }
+
+  void stationPointDao::update(stationPoint *sp)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(sp);
+    EXEC SQL UPDATE station_point SET
+      point_id=:us_t,
+      latitude=:d_t_1,
+      longitude=:d_t_2,
+      sea_height=:d_t_3
+      WHERE point_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void stationPointDao::remove(stationPoint *sp)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(sp);
+    EXEC SQL DELETE FROM station_point WHERE point_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  stationPoint *stationPointDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT stationPoint_type, stationPoint_name INTO :aus_t, :ac20_t FROM stationPoint WHERE stationPoint_id = :aull_t;
+
+    stationPoint *sp, *asp = new stationPoint[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      sp = findById(aid[i]);
+      //set new object with selected values
+      asp[i].setId(sp->getId());
+      asp[i].setPointId(sp->getPointId());
+      asp[i].setLatitude(sp->getLatitude());
+      asp[i].setLongitude(sp->getLongitude());
+      asp[i].setSeaHeight(sp->getSeaHeight());
+    }
+    
+    return asp;
+  }
+
+  void stationPointDao::insert(stationPoint *asp, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(asp, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO station_point
+      VALUES(:aull_t, :aus_t, :ad_t_1, :ad_t_2, :ad_t_3);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << asp[i].getName() << endl;
+    // }
+  }
+
+  void stationPointDao::update(stationPoint *asp, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(asp, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE station_point SET
+      point_id=:aus_t,
+      latitude=:ad_t_1,
+      longitude=:ad_t_2,
+      sea_height=:ad_t_3
+      WHERE point_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void stationPointDao::remove(stationPoint *asp, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(asp, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM station_point
+      WHERE point_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}
+
+/152            1336499769  1001  1001  100644  2261      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"../types.h"
+#include"rsmc.h"
+#include"rsmcDao.h"
+#include<sqlca.h>
+
+using namespace nrs;
+using namespace std;
+
+EXEC SQL BEGIN DECLARE SECTION;
+varchar log_pass[40];
+EXEC SQL END DECLARE SECTION;
+
+void pres(rsmc *rs)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  printf("|  %-5d ", rs->getId());
+  printf("|  %-20s |", rs->getName());
+  printf("  %-10u     |\n", rs->getType());
+  printf("--------------------------------------------------\n");
+}
+
+void pres(rsmc *ars, int size_a)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  for (int i = 0; i < size_a; ++i) {
+    printf("|  %-5d ", ars[i].getId());
+    printf("|  %-20s |", ars[i].getName());
+    printf("  %-10u     |\n", ars[i].getType());
+  }
+  printf("--------------------------------------------------\n");
+}
+
+void init_test_rsmc(rsmc *ars, char *name, ull *indices, int size_a)
+{
+  for (int i = 0; i < 21; ++i)
+    name[i] = '\0';
+
+  for (int i = 1; i < 10; ++i) {
+    ars[i].setId(i);
+    sprintf(name, "%d", i);
+    //cout << name << endl;
+    ars[i].setName(name); 
+    ars[i].setType(i);
+    indices[i-1] = i-1;
+  }
+
+  indices[size_a-1] = size_a - 1;
+}
+
+void test_rsmc()
+{
+  rsmc *rs, *ars = new rsmc[10];
+  rsmcDao *rsd = new rsmcDao();
+  //vector<rsmc> vrs(10);
+  char name[20];
+  ull *indices = new ull[10];
+
+  rs = new rsmc();
+  rs->setId(1);
+  rs->setName("tunoshna_station");
+  rs->setType(0);
+  rsd->insert(rs);
+  delete rs;
+  pres(rs = rsd->findById(1));
+  rs->setType(1);
+  rsd->update(rs);
+  pres(rs = rsd->findById(1));
+  rsd->remove(rs);
+  //EXEC SQL COMMIT WORK RELEASE;
+
+  init_test_rsmc(ars, name, indices, 10);
+  rsd->insert(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  for (int i = 1; i < 10; ++i) { 
+    ars[i].setType(i + 10);
+  }
+
+  rsd->update(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  rsd->remove(ars, 10);
+}
+
+int main()
+{
+  strcpy(log_pass.arr,"system/manager");
+  log_pass.len = strlen(log_pass.arr);
+  EXEC SQL CONNECT :log_pass;
+  printf("connection open\n");
+  test_rsmc();
+  EXEC SQL COMMIT;
+  printf("connection closed\n");
+  
+  return 0;
+}
+

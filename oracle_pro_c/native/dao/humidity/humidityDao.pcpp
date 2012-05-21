@@ -1,0 +1,213 @@
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"humidity.h"
+#include"humidityDao.h"
+
+namespace nhm {
+
+#include<sqlca.h>
+#include"../../main.h"
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t_1;
+  unsigned short  us_t_2;
+  static varchar c20_t[20];
+  double d_t_1;
+  double d_t_2;
+  double d_t_3;
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t_1[100];
+  unsigned short  aus_t_2[100];
+  static varchar ac20_t[100][20];
+  double ad_t_1[100];
+  double ad_t_2[100];
+  double ad_t_3[100];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void humidityDao::copy(humidity *hm)
+  {
+    char *value = hm->getDateTime();
+    ull_t = hm->getId();
+    us_t_1 = hm->getPointId();
+    for (int i = 0; i < 19; ++i)
+      c20_t.arr[i] = value[i];
+    c20_t.arr[19] = '\0';
+    c20_t.len = ustrlen(c20_t.arr);
+    us_t_2 = hm->getPrediction();
+    d_t_1 = hm->getAbsolute();
+    d_t_2 = hm->getRelative();
+    d_t_3 = hm->getSpecific();
+  }
+
+  void humidityDao::acopy(humidity *ahm, int size_a)
+  {
+    char *value;
+
+    for (int i = 0; i < size_a; ++i) {
+      value = ahm[i].getDateTime();
+      aull_t[i] = ahm[i].getId();
+      aus_t_1[i] = ahm[i].getPointId();
+      for (int j = 0; j < 19; ++j)
+	ac20_t[i].arr[j] = value[j];
+      ac20_t[i].arr[19] = '\0';
+      ac20_t[i].len = ustrlen(ac20_t[i].arr);
+      aus_t_2[i]  = ahm[i].getPrediction();
+      ad_t_1[i] = ahm[i].getAbsolute();
+      ad_t_2[i] = ahm[i].getRelative();
+      ad_t_3[i] = ahm[i].getSpecific();
+    }
+  }
+ 
+  humidity *humidityDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT      
+      point_id,
+      datetime,
+      prediction,
+      absolute,
+      relative,
+      specific
+      INTO :us_t_1, :c20_t, :us_t_2, :d_t_1, :d_t_2, :d_t_3 
+      FROM humidity
+      WHERE humidity_id = :ull_t;
+
+    //copy values to local variables
+    cId = ull_t;
+    cPointId = us_t_1;
+    for (int i = 0; i < 19; ++i)
+      cDateTime[i] = c20_t.arr[i];
+    cDateTime[19] = '\0';
+    cPrediction = us_t_2;
+    cAbsolute = d_t_1;
+    cRelative  = d_t_2;
+    cSpecific  = d_t_3;
+
+    //set new object with selected values
+    humidity *hm = new humidity();
+    hm->setId(cId);
+    hm->setPointId(cPointId);
+    hm->setDateTime(cDateTime);
+    hm->setPrediction(cPrediction);
+    hm->setAbsolute(cAbsolute);
+    hm->setRelative(cRelative);
+    hm->setSpecific(cSpecific);
+
+    //printf("result - id = %llu name = %s type = %u\n", hm->getId(), hm->getName(), hm->getType());
+    return hm;
+  }
+
+  void humidityDao::insert(humidity *hm)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(hm);
+    EXEC SQL INSERT INTO humidity 
+      VALUES(:ull_t, :us_t_1, :c20_t, :us_t_2, :d_t_1, :d_t_2, :d_t_3);
+    //EXEC SQL COMMIT;
+  }
+
+  void humidityDao::update(humidity *hm)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(hm);
+    EXEC SQL UPDATE humidity SET
+      point_id=:us_t_1,
+      datetime=:c20_t,
+      prediction=:us_t_2,
+      absolute=:d_t_1,
+      relative=:d_t_2,
+      specific=:d_t_3
+      WHERE humidity_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void humidityDao::remove(humidity *hm)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(hm);
+    EXEC SQL DELETE FROM humidity WHERE humidity_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  humidity *humidityDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT humidity_type, humidity_name INTO :aus_t, :ac20_t FROM humidity WHERE humidity_id = :aull_t;
+
+    humidity *hm, *ahm = new humidity[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      hm = findById(aid[i]);
+      //set new object with selected values
+      ahm[i].setId(hm->getId());
+      ahm[i].setPointId(hm->getPointId());
+      ahm[i].setDateTime(hm->getDateTime());
+      ahm[i].setPrediction(hm->getPrediction());
+      ahm[i].setAbsolute(hm->getAbsolute());
+      ahm[i].setRelative(hm->getRelative());
+      ahm[i].setSpecific(hm->getSpecific());
+    }
+    
+    return ahm;
+  }
+
+  void humidityDao::insert(humidity *ahm, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(ahm, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO humidity
+      VALUES(:aull_t, :aus_t_1, :ac20_t, :aus_t_2, :ad_t_1, :ad_t_2, :ad_t_3);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << ahm[i].getName() << endl;
+    // }
+  }
+
+  void humidityDao::update(humidity *ahm, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(ahm, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE humidity SET
+      point_id=:aus_t_1,
+      datetime=:ac20_t,
+      prediction=:aus_t_2,
+      absolute=:ad_t_1,
+      relative=:ad_t_2,
+      specific=:ad_t_3
+      WHERE humidity_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void humidityDao::remove(humidity *ahm, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(ahm, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM humidity
+      WHERE humidity_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}

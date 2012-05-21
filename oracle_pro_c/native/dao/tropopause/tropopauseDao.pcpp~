@@ -1,0 +1,213 @@
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"tropopause.h"
+#include"tropopauseDao.h"
+#include"../../main.h"
+
+namespace ntp {
+
+#include<sqlca.h>
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t_1;
+  unsigned short  us_t_2;
+  static varchar c20_t[20];
+  double d_t_1;
+  double d_t_2;
+  double d_t_3;
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t_1[100];
+  unsigned short  aus_t_2[100];
+  static varchar ac20_t[100][20];
+  double ad_t_1[100];
+  double ad_t_2[100];
+  double ad_t_3[100];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void tropopauseDao::copy(tropopause *tp)
+  {
+    char *value = tp->getDateTime();
+    ull_t = tp->getId();
+    us_t_1 = tp->getPointId();
+    for (int i = 0; i < 19; ++i)
+      c20_t.arr[i] = value[i];
+    c20_t.arr[19] = '\0';
+    c20_t.len = ustrlen(c20_t.arr);
+    us_t_2 = tp->getPrediction();
+    d_t_1 = tp->getHeight();
+    d_t_2 = tp->getThickness();
+    d_t_3 = tp->getVerticalWindShear();
+  }
+
+  void tropopauseDao::acopy(tropopause *atp, int size_a)
+  {
+    char *value;
+
+    for (int i = 0; i < size_a; ++i) {
+      value = atp[i].getDateTime();
+      aull_t[i] = atp[i].getId();
+      aus_t_1[i] = atp[i].getPointId();
+      for (int j = 0; j < 19; ++j)
+	ac20_t[i].arr[j] = value[j];
+      ac20_t[i].arr[19] = '\0';
+      ac20_t[i].len = ustrlen(ac20_t[i].arr);
+      aus_t_2[i]  = atp[i].getPrediction();
+      ad_t_1[i] = atp[i].getHeight();
+      ad_t_2[i] = atp[i].getThickness();
+      ad_t_3[i] = atp[i].getVerticalWindShear();
+    }
+  }
+ 
+  tropopause *tropopauseDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT      
+      point_id,
+      datetime,
+      prediction,
+      height,
+      thickness,
+      vertical_wind_shear
+      INTO :us_t_1, :c20_t, :us_t_2, :d_t_1, d_t_2, d_t_3 
+      FROM tropopause
+      WHERE tropopause_id = :ull_t;
+
+    //copy values to local variables
+    cId = ull_t;
+    cPointId = us_t_1;
+    for (int i = 0; i < 19; ++i)
+      cDateTime[i] = c20_t.arr[i];
+    cDateTime[19] = '\0';
+    cPrediction = us_t_2;
+    cHeight = d_t_1;
+    cThickness  = d_t_2;
+    cVerticalWindShear  = d_t_3;
+
+    //set new object with selected values
+    tropopause *tp = new tropopause();
+    tp->setId(cId);
+    tp->setPointId(cPointId);
+    tp->setDateTime(cDateTime);
+    tp->setPrediction(cPrediction);
+    tp->setHeight(cHeight);
+    tp->setThickness(cThickness);
+    tp->setVerticalWindShear(cVerticalWindShear);
+
+    //printf("result - id = %llu name = %s type = %u\n", tp->getId(), tp->getName(), tp->getType());
+    return tp;
+  }
+
+  void tropopauseDao::insert(tropopause *tp)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(tp);
+    EXEC SQL INSERT INTO tropopause 
+      VALUES(:ull_t, :us_t_1, :c20_t, :us_t_2, :d_t_1, :d_t_2, :d_t_3);
+    //EXEC SQL COMMIT;
+  }
+
+  void tropopauseDao::update(tropopause *tp)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(tp);
+    EXEC SQL UPDATE tropopause SET
+      point_id=:us_t_1,
+      datetime=:c20_t,
+      prediction=:us_t_2,
+      height=:d_t_1,
+      thickness=:d_t_2,
+      vertical_wind_shear=:d_t_3
+      WHERE tropopause_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void tropopauseDao::remove(tropopause *tp)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(tp);
+    EXEC SQL DELETE FROM tropopause WHERE tropopause_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  tropopause *tropopauseDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT tropopause_type, tropopause_name INTO :aus_t, :ac20_t FROM tropopause WHERE tropopause_id = :aull_t;
+
+    tropopause *tp, *atp = new tropopause[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      tp = findById(aid[i]);
+      //set new object with selected values
+      atp[i].setId(tp->getId());
+      atp[i].setPointId(tp->getPointId());
+      atp[i].setDateTime(tp->getDateTime());
+      atp[i].setPrediction(tp->getPrediction());
+      atp[i].setHeight(tp->getHeight());
+      atp[i].setThickness(tp->getThickness());
+      atp[i].setVerticalWindShear(tp->getVerticalWindShear());
+    }
+    
+    return atp;
+  }
+
+  void tropopauseDao::insert(tropopause *atp, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(atp, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO tropopause
+      VALUES(:aull_t, :aus_t_1, :ac20_t, :aus_t_2, :ad_t_1, :ad_t_2, :ad_t_3);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << atp[i].getName() << endl;
+    // }
+  }
+
+  void tropopauseDao::update(tropopause *atp, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(atp, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE tropopause SET
+      point_id=:aus_t_1,
+      datetime=:ac20_t,
+      prediction=:aus_t_2,
+      height=:ad_t_1,
+      thickness=:ad_t_2,
+      vertical_wind_shear=:ad_t_3
+      WHERE tropopause_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void tropopauseDao::remove(tropopause *atp, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(atp, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM tropopause
+      WHERE tropopause_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}

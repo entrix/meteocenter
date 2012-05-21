@@ -1,0 +1,181 @@
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"station_point.h"
+#include"station_pointDao.h"
+
+namespace nsp {
+
+#include<sqlca.h>
+#include"../../main.h"
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t;
+  double d_t_1;
+  double d_t_2;
+  double d_t_3;
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t[100];
+  double ad_t_1[100];
+  double ad_t_2[100];
+  double ad_t_3[100];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void stationPointDao::copy(stationPoint *sp)
+  {
+    ull_t = sp->getId();
+    us_t = sp->getPointId();
+    d_t_1 = sp->getLatitude();
+    d_t_2 = sp->getLongitude();
+    d_t_3 = sp->getSeaHeight();
+  }
+
+  void stationPointDao::acopy(stationPoint *asp, int size_a)
+  {
+    for (int i = 0; i < size_a; ++i) {
+      aull_t[i] = asp[i].getId();
+      aus_t[i] = asp[i].getPointId();
+      ad_t_1[i] = asp[i].getLatitude();
+      ad_t_2[i] = asp[i].getLongitude();
+      ad_t_3[i] = asp[i].getSeaHeight();
+    }
+  }
+ 
+  stationPoint *stationPointDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT      
+      point_id,
+      latitude,
+      longitude,
+      sea_height
+      INTO :us_t, :d_t_1, :d_t_2, :d_t_3 
+      FROM station_point
+      WHERE point_id = :ull_t;
+
+    //copy values to local variables
+    cId = ull_t;
+    cPointId = us_t;
+    cLatitude = d_t_1;
+    cLongitude  = d_t_2;
+    cSeaHeight  = d_t_3;
+
+    //set new object with selected values
+    stationPoint *sp = new stationPoint();
+    sp->setId(cId);
+    sp->setPointId(cPointId);
+    sp->setLatitude(cLatitude);
+    sp->setLongitude(cLongitude);
+    sp->setSeaHeight(cSeaHeight);
+
+    //printf("result - id = %llu name = %s type = %u\n", sp->getId(), sp->getName(), sp->getType());
+    return sp;
+  }
+
+  void stationPointDao::insert(stationPoint *sp)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(sp);
+    EXEC SQL INSERT INTO station_point 
+      VALUES(:ull_t, :us_t, :d_t_1, :d_t_2, :d_t_3);
+    //EXEC SQL COMMIT;
+  }
+
+  void stationPointDao::update(stationPoint *sp)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(sp);
+    EXEC SQL UPDATE station_point SET
+      point_id=:us_t,
+      latitude=:d_t_1,
+      longitude=:d_t_2,
+      sea_height=:d_t_3
+      WHERE point_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void stationPointDao::remove(stationPoint *sp)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(sp);
+    EXEC SQL DELETE FROM station_point WHERE point_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  stationPoint *stationPointDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT stationPoint_type, stationPoint_name INTO :aus_t, :ac20_t FROM stationPoint WHERE stationPoint_id = :aull_t;
+
+    stationPoint *sp, *asp = new stationPoint[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      sp = findById(aid[i]);
+      //set new object with selected values
+      asp[i].setId(sp->getId());
+      asp[i].setPointId(sp->getPointId());
+      asp[i].setLatitude(sp->getLatitude());
+      asp[i].setLongitude(sp->getLongitude());
+      asp[i].setSeaHeight(sp->getSeaHeight());
+    }
+    
+    return asp;
+  }
+
+  void stationPointDao::insert(stationPoint *asp, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(asp, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO station_point
+      VALUES(:aull_t, :aus_t, :ad_t_1, :ad_t_2, :ad_t_3);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << asp[i].getName() << endl;
+    // }
+  }
+
+  void stationPointDao::update(stationPoint *asp, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(asp, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE station_point SET
+      point_id=:aus_t,
+      latitude=:ad_t_1,
+      longitude=:ad_t_2,
+      sea_height=:ad_t_3
+      WHERE point_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void stationPointDao::remove(stationPoint *asp, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(asp, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM station_point
+      WHERE point_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}

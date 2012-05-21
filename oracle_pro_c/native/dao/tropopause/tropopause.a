@@ -1,0 +1,889 @@
+!<arch>
+//                                              90        `
+tropopauseDao.pcpp/
+tropopauseDao-test.pcpp/
+tropopauseDao.pcpp/
+tropopauseDao-test.pcpp/
+tropopause.h/   1336499769  1001  1001  100644  476       `
+#include"../types.h"
+
+#ifndef __RSMC_H__
+#define __RSMC_H__
+
+namespace nrs {
+
+  class rsmc {
+    ull rsmcId;
+    us  rsmcType;
+    char *rsmcName;
+  
+  public:
+    //constructor with no parameters
+    //for the java pojo classes ideology
+    rsmc();
+  
+    //standart getters and setter for class fields
+    ull getId();
+    void setId(const ull id);
+    us  getType();
+    void setType(const us type);
+    char *getName();
+    void setName(const char *name);
+  };
+
+}
+
+#endif
+tropopause.cpp/ 1336499769  1001  1001  100644  598       `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include"rsmc.h"
+
+namespace nrs {
+
+  rsmc::rsmc()
+  {
+    rsmcName = new char[21];
+  
+    for (int i = 0; i < 21; ++i)
+      rsmcName[i] = '\0';
+  }  
+
+  ull rsmc::getId()
+  {
+    return rsmcId;
+  }
+
+  void rsmc::setId(ull id)
+  {
+    rsmcId = id;
+  }
+
+  char *rsmc::getName()
+  {
+    return rsmcName;
+  }
+
+  void rsmc::setName(const char *name)
+  {
+    if (strlen(name) > 20)
+      return;
+
+    strcpy(rsmcName, name);
+  }
+
+  us rsmc::getType()
+  {
+    return rsmcType;
+  }
+
+  void  rsmc::setType(const us type)
+  {
+    rsmcType = type;
+  }
+
+}
+tropopauseDao.h/1336499769  1001  1001  100644  595       `
+#include"../types.h"
+#include "rsmc.h"
+
+#ifndef __RSMCDAO_H__
+#define __RSMCDAO_H__
+
+namespace nrs {
+
+  class rsmcDao {
+    //copying parameters
+    ull  cid;
+    us   ctype;
+    char cname[21];
+  
+    void copy(rsmc *rs);
+    void acopy(rsmc *ars, int size_a);
+  public:
+    //scalar case
+    rsmc *findById(ull id);
+    void insert(rsmc *rs);
+    void update(rsmc *rs);
+    void remove(rsmc *rs);
+    //vector case
+    rsmc *findById(ull *aid, int size_a);
+    void insert(rsmc *ars, int size_a);
+    void update(rsmc *ars, int size_a);
+    void remove(rsmc *ars, int size_a);
+  };
+
+}
+
+#endif
+
+/0              1336499769  1001  1001  100644  4004      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"rsmc.h"
+#include"rsmcDao.h"
+#include"../main.h"
+
+namespace nrs {
+
+#include<sqlca.h>
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t;
+  varchar c20_t[20];
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t[100];
+  varchar ac20_t[100][20];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void rsmcDao::copy(rsmc *rs)
+  {
+    char *name = rs->getName();
+    ull_t = rs->getId();
+    for (int i = 0; i < 19; ++i)
+      c20_t.arr[i] = name[i];
+    c20_t.arr[19] = '\0';
+    c20_t.len = strlen(c20_t.arr);
+    us_t  = rs->getType();
+  }
+
+  void rsmcDao::acopy(rsmc *ars, int size_a)
+  {
+    char *name;
+
+    for (int i = 0; i < size_a; ++i) {
+      name = ars[i].getName();
+      aull_t[i] = ars[i].getId();
+      for (int j = 0; j < 19; ++j)
+      ac20_t[i].arr[j] = name[j];
+      ac20_t[i].arr[19] = '\0';
+      ac20_t[i].len = strlen(ac20_t[i].arr);
+      //cout << ars[i].getName() << " --- " << ac20_t[i].arr << endl;
+      aus_t[i]  = ars[i].getType();
+    }
+  }
+ 
+  rsmc *rsmcDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT rsmc_type, rsmc_name INTO :us_t, :c20_t FROM rsmc WHERE rsmc_id = :ull_t;
+
+    //copy values to local variables
+    cid = ull_t;
+    for (int i = 0; i < 20; ++i)
+      cname[i] = c20_t.arr[i];
+    cname[20] = '\0';
+    ctype = us_t;
+  
+    //set new object with selected values
+    rsmc *rs = new rsmc();
+    rs->setId(cid);
+    rs->setType(ctype);
+    rs->setName(cname); 
+
+    //printf("result - id = %llu name = %s type = %u\n", rs->getId(), rs->getName(), rs->getType());
+    return rs;
+  }
+
+  void rsmcDao::insert(rsmc *rs)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(rs);
+    EXEC SQL INSERT INTO rsmc VALUES(:ull_t, :c20_t, :us_t);
+    //EXEC SQL COMMIT;
+  }
+
+  void rsmcDao::update(rsmc *rs)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(rs);
+    EXEC SQL UPDATE rsmc SET rsmc_name=:c20_t, rsmc_type=:us_t WHERE rsmc_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void rsmcDao::remove(rsmc *rs)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(rs);
+    EXEC SQL DELETE FROM rsmc WHERE rsmc_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  rsmc *rsmcDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT rsmc_type, rsmc_name INTO :aus_t, :ac20_t FROM rsmc WHERE rsmc_id = :aull_t;
+
+    rsmc *rs, *ars = new rsmc[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      rs = findById(aid[i]);
+      //set new object with selected values
+      ars[i].setId(rs->getId());
+      ars[i].setName(rs->getName());  
+      ars[i].setType(rs->getType());
+   }
+    
+    return ars;
+  }
+
+  void rsmcDao::insert(rsmc *ars, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(ars, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO rsmc
+      VALUES(:aull_t, :ac20_t,:aus_t);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << ars[i].getName() << endl;
+    // }
+  }
+
+  void rsmcDao::update(rsmc *ars, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(ars, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE rsmc SET
+      rsmc_name=:ac20_t, rsmc_type=:aus_t 
+      WHERE rsmc_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void rsmcDao::remove(rsmc *ars, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(ars, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM rsmc
+      WHERE rsmc_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}
+/20             1336499769  1001  1001  100644  2261      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"../types.h"
+#include"rsmc.h"
+#include"rsmcDao.h"
+#include<sqlca.h>
+
+using namespace nrs;
+using namespace std;
+
+EXEC SQL BEGIN DECLARE SECTION;
+varchar log_pass[40];
+EXEC SQL END DECLARE SECTION;
+
+void pres(rsmc *rs)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  printf("|  %-5d ", rs->getId());
+  printf("|  %-20s |", rs->getName());
+  printf("  %-10u     |\n", rs->getType());
+  printf("--------------------------------------------------\n");
+}
+
+void pres(rsmc *ars, int size_a)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  for (int i = 0; i < size_a; ++i) {
+    printf("|  %-5d ", ars[i].getId());
+    printf("|  %-20s |", ars[i].getName());
+    printf("  %-10u     |\n", ars[i].getType());
+  }
+  printf("--------------------------------------------------\n");
+}
+
+void init_test_rsmc(rsmc *ars, char *name, ull *indices, int size_a)
+{
+  for (int i = 0; i < 21; ++i)
+    name[i] = '\0';
+
+  for (int i = 1; i < 10; ++i) {
+    ars[i].setId(i);
+    sprintf(name, "%d", i);
+    //cout << name << endl;
+    ars[i].setName(name); 
+    ars[i].setType(i);
+    indices[i-1] = i-1;
+  }
+
+  indices[size_a-1] = size_a - 1;
+}
+
+void test_rsmc()
+{
+  rsmc *rs, *ars = new rsmc[10];
+  rsmcDao *rsd = new rsmcDao();
+  //vector<rsmc> vrs(10);
+  char name[20];
+  ull *indices = new ull[10];
+
+  rs = new rsmc();
+  rs->setId(1);
+  rs->setName("tunoshna_station");
+  rs->setType(0);
+  rsd->insert(rs);
+  delete rs;
+  pres(rs = rsd->findById(1));
+  rs->setType(1);
+  rsd->update(rs);
+  pres(rs = rsd->findById(1));
+  rsd->remove(rs);
+  //EXEC SQL COMMIT WORK RELEASE;
+
+  init_test_rsmc(ars, name, indices, 10);
+  rsd->insert(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  for (int i = 1; i < 10; ++i) { 
+    ars[i].setType(i + 10);
+  }
+
+  rsd->update(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  rsd->remove(ars, 10);
+}
+
+int main()
+{
+  strcpy(log_pass.arr,"system/manager");
+  log_pass.len = strlen(log_pass.arr);
+  EXEC SQL CONNECT :log_pass;
+  printf("connection open\n");
+  test_rsmc();
+  EXEC SQL COMMIT;
+  printf("connection closed\n");
+  
+  return 0;
+}
+
+tropopause.h/   1336520785  1001  1001  100644  944       `
+#include"../../types.h"
+
+#ifndef __TROPOPAUSE_H__
+#define __TROPOPAUSE_H__
+
+namespace ntp {
+
+  class tropopause {
+    ull tropopauseId;
+    us pointId;
+    char *dateTime;
+    us   prediction;
+    double height;
+    double thickness;
+    double verticalWindShear;
+  
+  public:
+    //constructor with no parameters
+    //for the java pojo classes ideology
+    tropopause();
+    ~tropopause();
+
+    //standart getters and setter for class fields
+    ull getId();
+    void setId(const ull id);
+    us  getPointId();
+    void setPointId(const ull pointId);
+    char *getDateTime();
+    void setDateTime(const char *dateTime);
+    us getPrediction();
+    void setPrediction(const us prediction);
+    double getHeight();
+    void setHeight(const double height);
+    double getThickness();
+    void setThickness(const double thickness);
+    double getVerticalWindShear();
+    void setVerticalWindShear(const double verticalWindShear);
+  };
+
+}
+
+#endif
+tropopause.cpp/ 1336520828  1001  1001  100644  1469      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include"tropopause.h"
+
+namespace ntp {
+
+  tropopause::tropopause()
+  {
+    dateTime = new char[20];
+  
+    for (int i = 0; i < 20; ++i) {
+      dateTime[i] = '\0';
+    }
+
+  }  
+
+  tropopause::~tropopause()
+  {
+    delete [] dateTime;
+  }
+
+  ull tropopause::getId()
+  {
+    return tropopauseId;
+  }
+
+  void tropopause::setId(ull id)
+  {
+    tropopauseId = id;
+  }
+
+  us tropopause::getPointId()
+  {
+    return pointId;
+  }
+
+  void  tropopause::setPointId(const ull pointId)
+  {
+    this->pointId = pointId;
+  }
+
+  char *tropopause::getDateTime()
+  {
+    return dateTime;
+  }
+
+  void tropopause::setDateTime(const char *dateTime)
+  {
+    if (strlen(dateTime) > 20)
+      return;
+
+    strcpy(this->dateTime, dateTime);
+  }
+
+  us tropopause::getPrediction()
+  {
+    return prediction;
+  }
+
+  void  tropopause::setPrediction(const us prediction)
+  {
+    this->prediction = prediction;
+  }
+
+  double tropopause::getHeight()
+  {
+    return height;
+  }
+
+  void  tropopause::setHeight(const double height)
+  {
+    this->height = height;
+  }
+
+  double tropopause::getThickness()
+  {
+    return thickness;
+  }
+
+  void  tropopause::setThickness(const double thickness)
+  {
+    this->thickness = thickness;
+  }
+
+  double tropopause::getVerticalWindShear()
+  {
+    return verticalWindShear;
+  }
+
+  void  tropopause::setVerticalWindShear(const double verticalWindShear)
+  {
+    this->verticalWindShear = verticalWindShear;
+  }
+
+}
+
+tropopauseDao.h/1336520778  1001  1001  100644  781       `
+#include"../../types.h"
+#include "tropopause.h"
+
+#ifndef __TROPOPAUSEDAO_H__
+#define __TROPOPAUSEDAO_H__
+
+namespace ntp {
+
+  class tropopauseDao {
+    //copying parameters
+    ull  cId;
+    us cPointId;
+    char cDateTime[20];
+    us cPrediction;
+    double cHeight;
+    double cThickness;
+    double cVerticalWindShear;
+  
+    void copy(tropopause *tp);
+    void acopy(tropopause *atp, int size_a);
+  public:
+    //scalar case
+    tropopause *findById(ull id);
+    void insert(tropopause *tp);
+    void update(tropopause *tp);
+    void remove(tropopause *tp);
+    //vector case
+    tropopause *findById(ull *aid, int size_a);
+    void insert(tropopause *atp, int size_a);
+    void update(tropopause *atp, int size_a);
+    void remove(tropopause *atp, int size_a);
+  };
+
+}
+
+#endif
+
+/45             1336522446  1001  1001  100644  5641      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"tropopause.h"
+#include"tropopauseDao.h"
+#include"../../main.h"
+
+namespace ntp {
+
+#include<sqlca.h>
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t_1;
+  unsigned short  us_t_2;
+  varchar c20_t[20];
+  double d_t_1;
+  double d_t_2;
+  double d_t_3;
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t_1[100];
+  unsigned short  aus_t_2[100];
+  varchar ac20_t[100][20];
+  double ad_t_1[100];
+  double ad_t_2[100];
+  double ad_t_3[100];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void tropopauseDao::copy(tropopause *tp)
+  {
+    char *value = tp->getDateTime();
+    ull_t = tp->getId();
+    us_t_1 = tp->getPointId();
+    for (int i = 0; i < 19; ++i)
+      c20_t.arr[i] = value[i];
+    c20_t.arr[19] = '\0';
+    c20_t.len = strlen(c20_t.arr);
+    us_t_2 = tp->getPrediction();
+    d_t_1 = tp->getHeight();
+    d_t_2 = tp->getThickness();
+    d_t_3 = tp->getVerticalWindShear();
+  }
+
+  void tropopauseDao::acopy(tropopause *atp, int size_a)
+  {
+    char *value;
+
+    for (int i = 0; i < size_a; ++i) {
+      value = atp[i].getDateTime();
+      aull_t[i] = atp[i].getId();
+      aus_t_1[i] = atp[i].getPointId();
+      for (int j = 0; j < 19; ++j)
+	ac20_t[i].arr[j] = value[j];
+      ac20_t[i].arr[19] = '\0';
+      ac20_t[i].len = strlen(ac20_t[i].arr);
+      aus_t_2[i]  = atp[i].getPrediction();
+      ad_t_1[i] = atp[i].getHeight();
+      ad_t_2[i] = atp[i].getThickness();
+      ad_t_3[i] = atp[i].getVerticalWindShear();
+    }
+  }
+ 
+  tropopause *tropopauseDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT      
+      point_id,
+      datetime,
+      prediction,
+      height,
+      thickness,
+      vertical_wind_shear
+      INTO :us_t_1, :c20_t, :us_t_2, :d_t_1, d_t_2, d_t_3 
+      FROM tropopause
+      WHERE tropopause_id = :ull_t;
+
+    //copy values to local variables
+    cId = ull_t;
+    cPointId = us_t_1;
+    for (int i = 0; i < 19; ++i)
+      cDateTime[i] = c20_t.arr[i];
+    cDateTime[19] = '\0';
+    cPrediction = us_t_2;
+    cHeight = d_t_1;
+    cThickness  = d_t_2;
+    cVerticalWindShear  = d_t_3;
+
+    //set new object with selected values
+    tropopause *tp = new tropopause();
+    tp->setId(cId);
+    tp->setPointId(cPointId);
+    tp->setDateTime(cDateTime);
+    tp->setPrediction(cPrediction);
+    tp->setHeight(cHeight);
+    tp->setThickness(cThickness);
+    tp->setVerticalWindShear(cVerticalWindShear);
+
+    //printf("result - id = %llu name = %s type = %u\n", tp->getId(), tp->getName(), tp->getType());
+    return tp;
+  }
+
+  void tropopauseDao::insert(tropopause *tp)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(tp);
+    EXEC SQL INSERT INTO tropopause 
+      VALUES(:ull_t, :us_t_1, :c20_t, :us_t_2, :d_t_1, :d_t_2, :d_t_3);
+    //EXEC SQL COMMIT;
+  }
+
+  void tropopauseDao::update(tropopause *tp)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(tp);
+    EXEC SQL UPDATE tropopause SET
+      point_id=:us_t_1,
+      datetime=:c20_t,
+      prediction=:us_t_2,
+      height=:d_t_1,
+      thickness=:d_t_2,
+      vertical_wind_shear=:d_t_3
+      WHERE tropopause_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void tropopauseDao::remove(tropopause *tp)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(tp);
+    EXEC SQL DELETE FROM tropopause WHERE tropopause_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  tropopause *tropopauseDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT tropopause_type, tropopause_name INTO :aus_t, :ac20_t FROM tropopause WHERE tropopause_id = :aull_t;
+
+    tropopause *tp, *atp = new tropopause[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      tp = findById(aid[i]);
+      //set new object with selected values
+      atp[i].setId(tp->getId());
+      atp[i].setPointId(tp->getPointId());
+      atp[i].setDateTime(tp->getDateTime());
+      atp[i].setPrediction(tp->getPrediction());
+      atp[i].setHeight(tp->getHeight());
+      atp[i].setThickness(tp->getThickness());
+      atp[i].setVerticalWindShear(tp->getVerticalWindShear());
+    }
+    
+    return atp;
+  }
+
+  void tropopauseDao::insert(tropopause *atp, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(atp, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO tropopause
+      VALUES(:aull_t, :aus_t_1, :ac20_t, :aus_t_2, :ad_t_1, :ad_t_2, :ad_t_3);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << atp[i].getName() << endl;
+    // }
+  }
+
+  void tropopauseDao::update(tropopause *atp, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(atp, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE tropopause SET
+      point_id=:aus_t_1,
+      datetime=:ac20_t,
+      prediction=:aus_t_2,
+      height=:ad_t_1,
+      thickness=:ad_t_2,
+      vertical_wind_shear=:ad_t_3
+      WHERE tropopause_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void tropopauseDao::remove(tropopause *atp, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(atp, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM tropopause
+      WHERE tropopause_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}
+
+/65             1336499769  1001  1001  100644  2261      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"../types.h"
+#include"rsmc.h"
+#include"rsmcDao.h"
+#include<sqlca.h>
+
+using namespace nrs;
+using namespace std;
+
+EXEC SQL BEGIN DECLARE SECTION;
+varchar log_pass[40];
+EXEC SQL END DECLARE SECTION;
+
+void pres(rsmc *rs)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  printf("|  %-5d ", rs->getId());
+  printf("|  %-20s |", rs->getName());
+  printf("  %-10u     |\n", rs->getType());
+  printf("--------------------------------------------------\n");
+}
+
+void pres(rsmc *ars, int size_a)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  for (int i = 0; i < size_a; ++i) {
+    printf("|  %-5d ", ars[i].getId());
+    printf("|  %-20s |", ars[i].getName());
+    printf("  %-10u     |\n", ars[i].getType());
+  }
+  printf("--------------------------------------------------\n");
+}
+
+void init_test_rsmc(rsmc *ars, char *name, ull *indices, int size_a)
+{
+  for (int i = 0; i < 21; ++i)
+    name[i] = '\0';
+
+  for (int i = 1; i < 10; ++i) {
+    ars[i].setId(i);
+    sprintf(name, "%d", i);
+    //cout << name << endl;
+    ars[i].setName(name); 
+    ars[i].setType(i);
+    indices[i-1] = i-1;
+  }
+
+  indices[size_a-1] = size_a - 1;
+}
+
+void test_rsmc()
+{
+  rsmc *rs, *ars = new rsmc[10];
+  rsmcDao *rsd = new rsmcDao();
+  //vector<rsmc> vrs(10);
+  char name[20];
+  ull *indices = new ull[10];
+
+  rs = new rsmc();
+  rs->setId(1);
+  rs->setName("tunoshna_station");
+  rs->setType(0);
+  rsd->insert(rs);
+  delete rs;
+  pres(rs = rsd->findById(1));
+  rs->setType(1);
+  rsd->update(rs);
+  pres(rs = rsd->findById(1));
+  rsd->remove(rs);
+  //EXEC SQL COMMIT WORK RELEASE;
+
+  init_test_rsmc(ars, name, indices, 10);
+  rsd->insert(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  for (int i = 1; i < 10; ++i) { 
+    ars[i].setType(i + 10);
+  }
+
+  rsd->update(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  rsd->remove(ars, 10);
+}
+
+int main()
+{
+  strcpy(log_pass.arr,"system/manager");
+  log_pass.len = strlen(log_pass.arr);
+  EXEC SQL CONNECT :log_pass;
+  printf("connection open\n");
+  test_rsmc();
+  EXEC SQL COMMIT;
+  printf("connection closed\n");
+  
+  return 0;
+}
+

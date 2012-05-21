@@ -1,0 +1,11 @@
+#!/usr/bin/perl -w
+my @ns = ();
+my $source;
+foreach (`ls |grep  -Pv '.*\.(sh|pl)\~?$'`) {
+    chomp;
+    $source = `cat "$_"/"$_".h`;
+    $source =~ /namespace (\w+)/x;
+    push @ns, $1;
+}
+
+print foreach (@ns);

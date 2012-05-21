@@ -1,0 +1,212 @@
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"precipitation.h"
+#include"precipitationDao.h"
+
+namespace npc {
+
+#include<sqlca.h>
+#include"../../main.h"
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t_1;
+  unsigned short  us_t_2;
+  unsigned short  us_t_3;
+  static varchar c20_t[20];
+  double d_t_1;
+  double d_t_2;
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t_1[100];
+  unsigned short  aus_t_2[100];
+  unsigned short  aus_t_3[100];
+  static varchar ac20_t[100][20];
+  double ad_t_1[100];
+  double ad_t_2[100];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void precipitationDao::copy(precipitation *pc)
+  {
+    char *value = pc->getDateTime();
+    ull_t = pc->getId();
+    us_t_1 = pc->getPointId();
+    us_t_2 = pc->getType();
+    for (int i = 0; i < 19; ++i)
+      c20_t.arr[i] = value[i];
+    c20_t.arr[19] = '\0';
+    c20_t.len = ustrlen(c20_t.arr);
+    us_t_3  = pc->getPrediction();
+    d_t_1 = pc->getQuantity();
+    d_t_2 = pc->getFrequency();
+  }
+
+  void precipitationDao::acopy(precipitation *apc, int size_a)
+  {
+    char *value;
+
+    for (int i = 0; i < size_a; ++i) {
+      value = apc[i].getDateTime();
+      aull_t[i] = apc[i].getId();
+      aus_t_1[i] = apc[i].getPointId();
+      aus_t_2[i] = apc[i].getType();
+      for (int j = 0; j < 19; ++j)
+	ac20_t[i].arr[j] = value[j];
+      ac20_t[i].arr[19] = '\0';
+      ac20_t[i].len = ustrlen(ac20_t[i].arr);
+      aus_t_3[i]  = apc[i].getPrediction();
+      ad_t_1[i] = apc[i].getQuantity();
+      ad_t_2[i] = apc[i].getFrequency();
+    }
+  }
+ 
+  precipitation *precipitationDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT      
+      point_id,
+      type,
+      datetime,
+      prediction,
+      quantity,
+      frequency
+      INTO :us_t_1, :us_t_2, :c20_t, :us_t_3, :d_t_1, d_t_2 
+      FROM precipitation
+      WHERE precipitation_id = :ull_t;
+
+    //copy values to local variables
+    cId = ull_t;
+    cPointId = us_t_1;
+    cType = us_t_2;
+    for (int i = 0; i < 19; ++i)
+      cDateTime[i] = c20_t.arr[i];
+    cDateTime[19] = '\0';
+    cPrediction = us_t_3;
+    cQuantity = d_t_1;
+    cFrequency  = d_t_2;
+
+    //set new object with selected values
+    precipitation *pc = new precipitation();
+    pc->setId(cId);
+    pc->setPointId(cPointId);
+    pc->setDateTime(cDateTime);
+    pc->setPrediction(cPrediction);
+    pc->setQuantity(cQuantity);
+    pc->setFrequency(cFrequency);
+
+    //printf("result - id = %llu name = %s type = %u\n", pc->getId(), pc->getName(), pc->getType());
+    return pc;
+  }
+
+  void precipitationDao::insert(precipitation *pc)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(pc);
+    EXEC SQL INSERT INTO precipitation 
+      VALUES(:ull_t, :us_t_1, us_t_2, :c20_t, :us_t_3, :d_t_1, :d_t_2);
+    //EXEC SQL COMMIT;
+  }
+
+  void precipitationDao::update(precipitation *pc)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(pc);
+    EXEC SQL UPDATE precipitation SET
+      point_id=:us_t_1,
+      type=:us_t_2,
+      datetime=:c20_t,
+      prediction=:us_t_3,
+      quantity=:d_t_1,
+      frequency=:d_t_2
+      WHERE precipitation_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void precipitationDao::remove(precipitation *pc)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(pc);
+    EXEC SQL DELETE FROM precipitation WHERE precipitation_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  precipitation *precipitationDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT precipitation_type, precipitation_name INTO :aus_t, :ac20_t FROM precipitation WHERE precipitation_id = :aull_t;
+
+    precipitation *pc, *apc = new precipitation[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      pc = findById(aid[i]);
+      //set new object with selected values
+      apc[i].setId(pc->getId());
+      apc[i].setPointId(pc->getPointId());
+      apc[i].setType(pc->getType());
+      apc[i].setDateTime(pc->getDateTime());
+      apc[i].setPrediction(pc->getPrediction());
+      apc[i].setQuantity(pc->getQuantity());
+      apc[i].setFrequency(pc->getFrequency());
+    }
+    
+    return apc;
+  }
+
+  void precipitationDao::insert(precipitation *apc, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(apc, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO precipitation
+      VALUES(:aull_t, :aus_t_1, aus_t_2, :ac20_t, :aus_t_3, :ad_t_1, :ad_t_2);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << apc[i].getName() << endl;
+    // }
+  }
+
+  void precipitationDao::update(precipitation *apc, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(apc, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE precipitation SET
+      point_id=:aus_t_1,
+      type=:aus_t_2,
+      datetime=:ac20_t,
+      prediction=:aus_t_3,
+      quantity=:ad_t_1,
+      frequency=:ad_t_2
+      WHERE precipitation_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void precipitationDao::remove(precipitation *apc, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(apc, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM precipitation
+      WHERE precipitation_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}

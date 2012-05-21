@@ -1,0 +1,193 @@
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"pressure.h"
+#include"pressureDao.h"
+#include"../../main.h"
+
+namespace npr {
+
+#include<sqlca.h>
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t_1;
+  unsigned short  us_t_2;
+  static varchar c20_t[20];
+  double d_t;
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t_1[100];
+  unsigned short  aus_t_2[100];
+  static varchar ac20_t[100][20];
+  double ad_t[100];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void pressureDao::copy(pressure *pr)
+  {
+    char *value = pr->getDateTime();
+    ull_t = pr->getId();
+    us_t_1 = pr->getPointId();
+    for (int i = 0; i < 19; ++i)
+      c20_t.arr[i] = value[i];
+    c20_t.arr[19] = '\0';
+    c20_t.len = ustrlen(c20_t.arr);
+    us_t_2  = pr->getPrediction();
+    d_t = pr->getValue();
+  }
+
+  void pressureDao::acopy(pressure *apr, int size_a)
+  {
+    char *value;
+
+    for (int i = 0; i < size_a; ++i) {
+      value = apr[i].getDateTime();
+      aull_t[i] = apr[i].getId();
+      aus_t_1[i] = apr[i].getPointId();
+      for (int j = 0; j < 19; ++j)
+	ac20_t[i].arr[j] = value[j];
+      ac20_t[i].arr[19] = '\0';
+      ac20_t[i].len = ustrlen(ac20_t[i].arr);
+      aus_t_2[i]  = apr[i].getPrediction();
+      ad_t[i] = apr[i].getValue();
+    }
+  }
+ 
+  pressure *pressureDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT      
+      point_id,
+      datetime,
+      prediction,
+      value
+      INTO :us_t_1, :c20_t, :us_t_2, :d_t 
+      FROM pressure
+      WHERE pressure_id = :ull_t;
+
+    //copy values to local variables
+    cId = ull_t;
+    cPointId = us_t_1;
+    for (int i = 0; i < 19; ++i)
+      cDateTime[i] = c20_t.arr[i];
+    cDateTime[19] = '\0';
+    cPrediction = us_t_2;
+    cValue = d_t;
+    
+    //set new object with selected values
+    pressure *pr = new pressure();
+    pr->setId(cId);
+    pr->setPointId(cPointId);
+    pr->setDateTime(cDateTime);
+    pr->setPrediction(cPrediction);
+    pr->setValue(cValue);
+   
+    //printf("result - id = %llu name = %s type = %u\n", pr->getId(), pr->getName(), pr->getType());
+    return pr;
+  }
+
+  void pressureDao::insert(pressure *pr)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(pr);
+    EXEC SQL INSERT INTO pressure 
+      VALUES(:ull_t, :us_t_1, :c20_t, :us_t_2, :d_t);
+    //EXEC SQL COMMIT;
+  }
+
+  void pressureDao::update(pressure *pr)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(pr);
+    EXEC SQL UPDATE pressure SET
+      point_id=:us_t_1,
+      datetime=:c20_t,
+      prediction=:us_t_2,
+      value=:d_t
+      WHERE pressure_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void pressureDao::remove(pressure *pr)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(pr);
+    EXEC SQL DELETE FROM pressure WHERE pressure_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  pressure *pressureDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT pressure_type, pressure_name INTO :aus_t, :ac20_t FROM pressure WHERE pressure_id = :aull_t;
+
+    pressure *pr, *apr = new pressure[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      pr = findById(aid[i]);
+      //set new object with selected values
+      apr[i].setId(pr->getId());
+      apr[i].setPointId(pr->getPointId());
+      apr[i].setDateTime(pr->getDateTime());
+      apr[i].setPrediction(pr->getPrediction());
+      apr[i].setValue(pr->getValue());
+    }
+    
+    return apr;
+  }
+
+  void pressureDao::insert(pressure *apr, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(apr, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO pressure
+      VALUES(:aull_t, :aus_t_1, :ac20_t, :aus_t_2, :ad_t);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << apr[i].getName() << endl;
+    // }
+  }
+
+  void pressureDao::update(pressure *apr, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(apr, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE pressure SET
+      point_id=:aus_t_1,
+      datetime=:ac20_t,
+      prediction=:aus_t_2,
+      value=:ad_t
+      WHERE pressure_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void pressureDao::remove(pressure *apr, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(apr, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM pressure
+      WHERE pressure_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}

@@ -1,0 +1,161 @@
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"station_delegation.h"
+#include"station_delegationDao.h"
+
+namespace nsd {
+
+#include<sqlca.h>
+#include"../../main.h"
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t_1;
+  unsigned short  us_t_2;
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t_1[100];
+  unsigned short  aus_t_2[100];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void stationDelegationDao::copy(stationDelegation *sd)
+  {
+    ull_t = sd->getId();
+    us_t_1 = sd->getRsmcId();
+    us_t_2 = sd->getPointId();
+  }
+
+  void stationDelegationDao::acopy(stationDelegation *asd, int size_a)
+  {
+    for (int i = 0; i < size_a; ++i) {
+      aull_t[i] = asd[i].getId();
+      aus_t_1[i] = asd[i].getRsmcId();
+      aus_t_2[i] = asd[i].getPointId();
+    }
+  }
+ 
+  stationDelegation *stationDelegationDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT      
+      rsmc_id,
+      point_id
+      INTO :us_t_1, :us_t_2 
+      FROM station_delegation
+      WHERE delegation_id = :ull_t;
+
+    //copy values to local variables
+    cId = ull_t;
+    cRsmcId = us_t_1;
+    cPointId = us_t_2;
+
+    //set new object with selected values
+    stationDelegation *sd = new stationDelegation();
+    sd->setId(cId);
+    sd->setRsmcId(cRsmcId);
+    sd->setPointId(cPointId);
+
+    //printf("result - id = %llu name = %s type = %u\n", sd->getId(), sd->getName(), sd->getType());
+    return sd;
+  }
+
+  void stationDelegationDao::insert(stationDelegation *sd)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(sd);
+    EXEC SQL INSERT INTO station_delegation 
+      VALUES(:ull_t, :us_t_1, :us_t_2);
+    //EXEC SQL COMMIT;
+  }
+
+  void stationDelegationDao::update(stationDelegation *sd)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(sd);
+    EXEC SQL UPDATE station_delegation SET
+      rsmc_id=:us_t_1,
+      point_id=:us_t_2
+      WHERE delegation_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void stationDelegationDao::remove(stationDelegation *sd)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(sd);
+    EXEC SQL DELETE FROM station_delegation WHERE delegation_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  stationDelegation *stationDelegationDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT stationDelegation_type, stationDelegation_name INTO :aus_t, :ac20_t FROM stationDelegation WHERE stationDelegation_id = :aull_t;
+
+    stationDelegation *sd, *asd = new stationDelegation[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      sd = findById(aid[i]);
+      //set new object with selected values
+      asd[i].setId(sd->getId());
+      asd[i].setRsmcId(sd->getRsmcId());
+      asd[i].setPointId(sd->getPointId());
+    }
+    
+    return asd;
+  }
+
+  void stationDelegationDao::insert(stationDelegation *asd, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(asd, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO station_delegation
+      VALUES(:aull_t, :aus_t_1, :aus_t_2);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << asd[i].getName() << endl;
+    // }
+  }
+
+  void stationDelegationDao::update(stationDelegation *asd, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(asd, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE station_delegation SET
+      rsmc_id=:aus_t_1,
+      point_id=:aus_t_2
+      WHERE delegation_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void stationDelegationDao::remove(stationDelegation *asd, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(asd, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM station_delegation
+      WHERE delegation_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}

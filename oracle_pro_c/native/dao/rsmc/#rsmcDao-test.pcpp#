@@ -1,0 +1,109 @@
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"../../types.h"
+#include"rsmc.h"
+#include"rsmcDao.h"
+#include"../wind/wind.h"
+#include"../wind/windDao.h"
+#include<sqlca.h>
+
+using namespace nrs;
+using namespace nwd;
+using namespace std;
+
+EXEC SQL BEGIN DECLARE SECTION;
+varchar log_pass[40];
+EXEC SQL END DECLARE SECTION;
+
+void pres(rsmc *rs)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  printf("|  %-5d ", rs->getId());
+  printf("|  %-20s |", rs->getName());
+  printf("  %-10u     |\n", rs->getType());
+  printf("--------------------------------------------------\n");
+}
+
+void pres(rsmc *ars, int size_a)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  for (int i = 0; i < size_a; ++i) {
+    printf("|  %-5d ", ars[i].getId());
+    printf("|  %-20s |", ars[i].getName());
+    printf("  %-10u     |\n", ars[i].getType());
+  }
+  printf("--------------------------------------------------\n");
+}
+
+void init_test_rsmc(rsmc *ars, char *name, ull *indices, int size_a)
+{
+  for (int i = 0; i < 21; ++i)
+    name[i] = '\0';
+
+  for (int i = 1; i < 10; ++i) {
+    ars[i].setId(i);
+    sprintf(name, "%d", i);
+    //cout << name << endl;
+    ars[i].setName(name); 
+    ars[i].setType(i);
+    indices[i-1] = i-1;
+  }
+
+  indices[size_a-1] = size_a - 1;
+}
+
+void test_rsmc()
+{
+  rsmc *rs, *ars = new rsmc[10];
+  rsmcDao *rsd = new rsmcDao();
+  //vector<rsmc> vrs(10);
+  char name[20];
+  ull *indices = new ull[10];
+  windDao *wnd = new windDao();
+  wind *w = wnd->findById(0);
+  
+  printf(">>>> wind force = %f\n", w->getForce());
+  rs = new rsmc();
+  rs->setId(1);
+  rs->setName("tunoshna_station");
+  rs->setType(0);
+  rsd->insert(rs);
+  delete rs;
+  pres(rs = rsd->findById(1));
+  rs->setType(1);
+  rsd->update(rs);
+  pres(rs = rsd->findById(1));
+  rsd->remove(rs);
+  //EXEC SQL COMMIT WORK RELEASE;
+
+  init_test_rsmc(ars, name, indices, 10);
+  rsd->insert(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  for (int i = 1; i < 10; ++i) { 
+    ars[i].setType(i + 10);
+  }
+
+  rsd->update(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  rsd->remove(ars, 10);
+}
+
+int main()
+{
+  strcpy(log_pass.arr,"system/manager");
+  log_pass.len = strlen(log_pass.arr);
+  EXEC SQL CONNECT :log_pass;
+  printf("connection open\n");
+  test_rsmc();
+  EXEC SQL COMMIT;
+  printf("connection closed\n");
+  
+  return 0;
+}

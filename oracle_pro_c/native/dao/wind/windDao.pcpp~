@@ -1,0 +1,212 @@
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"wind.h"
+#include"windDao.h"
+#include"../../main.h"
+
+namespace nwd {
+
+#include<sqlca.h>
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t_1;
+  unsigned short  us_t_2;
+  unsigned short  us_t_3;
+  static varchar c20_t[20];
+  double d_t_1;
+  double d_t_2;
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t_1[100];
+  unsigned short  aus_t_2[100];
+  unsigned short  aus_t_3[100];
+  static varchar ac20_t[100][20];
+  double ad_t_1[100];
+  double ad_t_2[100];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void windDao::copy(wind *wd)
+  {
+    char *value = wd->getDateTime();
+    ull_t = wd->getId();
+    us_t_1 = wd->getPointId();
+    us_t_2 = wd->getType();
+    for (int i = 0; i < 19; ++i)
+      c20_t.arr[i] = value[i];
+    c20_t.arr[19] = '\0';
+    c20_t.len = strlen(c20_t.arr);
+    us_t_3  = wd->getPrediction();
+    d_t_1 = wd->getCourse();
+    d_t_2 = wd->getForce();
+  }
+
+  void windDao::acopy(wind *awd, int size_a)
+  {
+    char *value;
+
+    for (int i = 0; i < size_a; ++i) {
+      value = awd[i].getDateTime();
+      aull_t[i] = awd[i].getId();
+      aus_t_1[i] = awd[i].getPointId();
+      aus_t_2[i] = awd[i].getType();
+      for (int j = 0; j < 19; ++j)
+	ac20_t[i].arr[j] = value[j];
+      ac20_t[i].arr[19] = '\0';
+      ac20_t[i].len = strlen(ac20_t[i].arr);
+      aus_t_3[i]  = awd[i].getPrediction();
+      ad_t_1[i] = awd[i].getCourse();
+      ad_t_2[i] = awd[i].getForce();
+    }
+  }
+ 
+  wind *windDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT      
+      point_id,
+      type,
+      datetime,
+      prediction,
+      course,
+      force
+      INTO :us_t_1, :us_t_2, :c20_t, :us_t_3, :d_t_1, d_t_2 
+      FROM wind
+      WHERE wind_id = :ull_t;
+
+    //copy values to local variables
+    cId = ull_t;
+    cPointId = us_t_1;
+    cType = us_t_2;
+    for (int i = 0; i < 19; ++i)
+      cDateTime[i] = c20_t.arr[i];
+    cDateTime[19] = '\0';
+    cPrediction = us_t_3;
+    cCourse = d_t_1;
+    cForce  = d_t_2;
+
+    //set new object with selected values
+    wind *wd = new wind();
+    wd->setId(cId);
+    wd->setPointId(cPointId);
+    wd->setDateTime(cDateTime);
+    wd->setPrediction(cPrediction);
+    wd->setCourse(cCourse);
+    wd->setForce(cForce);
+
+    //printf("result - id = %llu name = %s type = %u\n", wd->getId(), wd->getName(), wd->getType());
+    return wd;
+  }
+
+  void windDao::insert(wind *wd)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(wd);
+    EXEC SQL INSERT INTO wind 
+      VALUES(:ull_t, :us_t_1, us_t_2, :c20_t, :us_t_3, :d_t_1, :d_t_2);
+    //EXEC SQL COMMIT;
+  }
+
+  void windDao::update(wind *wd)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(wd);
+    EXEC SQL UPDATE wind SET
+      point_id=:us_t_1,
+      type=:us_t_2,
+      datetime=:c20_t,
+      prediction=:us_t_3,
+      course=:d_t_1,
+      force=:d_t_2
+      WHERE wind_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void windDao::remove(wind *wd)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(wd);
+    EXEC SQL DELETE FROM wind WHERE wind_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  wind *windDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT wind_type, wind_name INTO :aus_t, :ac20_t FROM wind WHERE wind_id = :aull_t;
+
+    wind *wd, *awd = new wind[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      wd = findById(aid[i]);
+      //set new object with selected values
+      awd[i].setId(wd->getId());
+      awd[i].setPointId(wd->getPointId());
+      awd[i].setType(wd->getType());
+      awd[i].setDateTime(wd->getDateTime());
+      awd[i].setPrediction(wd->getPrediction());
+      awd[i].setCourse(wd->getCourse());
+      awd[i].setForce(wd->getForce());
+    }
+    
+    return awd;
+  }
+
+  void windDao::insert(wind *awd, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(awd, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO wind
+      VALUES(:aull_t, :aus_t_1, aus_t_2, :ac20_t, :aus_t_3, :ad_t_1, :ad_t_2);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << awd[i].getName() << endl;
+    // }
+  }
+
+  void windDao::update(wind *awd, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(awd, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE wind SET
+      point_id=:aus_t_1,
+      type=:aus_t_2,
+      datetime=:ac20_t,
+      prediction=:aus_t_3,
+      course=:ad_t_1,
+      force=:ad_t_2
+      WHERE wind_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void windDao::remove(wind *awd, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(awd, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM wind
+      WHERE wind_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}

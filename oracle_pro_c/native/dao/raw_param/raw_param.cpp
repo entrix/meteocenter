@@ -1,0 +1,80 @@
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include"raw_param.h"
+
+namespace nrp {
+
+  rawParam::rawParam()
+  {
+    dateTime = new char[20];
+    vorticityAdvection = new char[20];
+  
+    for (int i = 0; i < 20; ++i) {
+      dateTime[i] = '\0';
+      vorticityAdvection[i] = '\0';
+    }
+  }  
+
+  rawParam::~rawParam()
+  {
+    delete [] dateTime;
+    delete [] vorticityAdvection;
+  }
+
+  ull rawParam::getId()
+  {
+    return rawParamId;
+  }
+
+  void rawParam::setId(ull id)
+  {
+    rawParamId = id;
+  }
+
+  us rawParam::getPointId()
+  {
+    return pointId;
+  }
+
+  void  rawParam::setPointId(const ull pointId)
+  {
+    this->pointId = pointId;
+  }
+
+  char *rawParam::getDateTime()
+  {
+    return dateTime;
+  }
+
+  void rawParam::setDateTime(const char *dateTime)
+  {
+    if (strlen(dateTime) > 20)
+      return;
+
+    strcpy(this->dateTime, dateTime);
+  }
+
+  us rawParam::getPrediction()
+  {
+    return prediction;
+  }
+
+  void  rawParam::setPrediction(const us prediction)
+  {
+    this->prediction = prediction;
+  }
+
+  char *rawParam::getVorticityAdvection()
+  {
+    return dateTime;
+  }
+
+  void rawParam::setVorticityAdvection(const char *value)
+  {
+    if (strlen(value) > 20)
+      return;
+
+    strcpy(vorticityAdvection, value);
+  }
+}

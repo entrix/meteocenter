@@ -1,0 +1,8 @@
+#include"main.h"
+
+int main()
+{
+  sub_main();
+
+  return 0;
+}

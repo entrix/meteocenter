@@ -1,0 +1,55 @@
+#include<stdio.h>
+#include<string.h>
+#include<math.h>
+#include<stdbool.h>
+#include<stdlib.h>
+#include<sqlca.h>
+/*
+#include"types.h"
+
+ull ull_t;
+us us_t;
+char *c20_t;
+*/
+
+EXEC SQL BEGIN DECLARE SECTION;
+varchar log_pass[40];
+int test_id[2];
+varchar test_a[2][10];
+EXEC SQL END DECLARE SECTION;
+//EXEC SQL INCLUDE sqlca.h;
+
+int main() 
+{
+  char *a = malloc(10);
+  int i = 0, j = 0;
+
+  strcpy(log_pass.arr,"system/manager");
+  log_pass.len = strlen(log_pass.arr);
+  EXEC SQL CONNECT :log_pass;
+  
+  //status
+  printf("connection open\n");
+  printf("select values\n\n");
+
+  for (j = 0; j < 2; ++j)
+    for (i = 0; i < 10; ++i) test_a[j].arr[i] = '\0';
+  //EXEC SQL SELECT a INTO :test_a FROM test;
+  EXEC SQL SELECT id, a INTO :test_id, :test_a FROM test;
+  //for (i = 0; i < 8; ++i) a[i] = test_a.arr[i];
+  printf(" *   id    *      a     *\n");
+  for (j = 0; j < 2; ++j)
+    printf(" | %4d    |  %8s  |\n", test_id[j], test_a[j].arr);
+  printf("-------------------------\n\n");
+  /*
+  test_id += 10;
+  printf("insert values\n\n");
+  printf(" *   id    *      a     *\n");
+  printf(" | %4d    |  %8s  |\n", test_id, test_a.arr);
+  printf("-------------------------\n");
+  EXEC SQL INSERT INTO test values(:test_id, :test_a);
+  */
+  EXEC SQL COMMIT;
+
+  return 0;
+} 

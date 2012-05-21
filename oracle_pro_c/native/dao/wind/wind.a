@@ -1,0 +1,885 @@
+!<arch>
+//                                              38        `
+windDao-test.pcpp/
+windDao-test.pcpp/
+wind.h/         1336499769  1001  1001  100644  476       `
+#include"../types.h"
+
+#ifndef __RSMC_H__
+#define __RSMC_H__
+
+namespace nrs {
+
+  class rsmc {
+    ull rsmcId;
+    us  rsmcType;
+    char *rsmcName;
+  
+  public:
+    //constructor with no parameters
+    //for the java pojo classes ideology
+    rsmc();
+  
+    //standart getters and setter for class fields
+    ull getId();
+    void setId(const ull id);
+    us  getType();
+    void setType(const us type);
+    char *getName();
+    void setName(const char *name);
+  };
+
+}
+
+#endif
+wind.cpp/       1336499769  1001  1001  100644  598       `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include"rsmc.h"
+
+namespace nrs {
+
+  rsmc::rsmc()
+  {
+    rsmcName = new char[21];
+  
+    for (int i = 0; i < 21; ++i)
+      rsmcName[i] = '\0';
+  }  
+
+  ull rsmc::getId()
+  {
+    return rsmcId;
+  }
+
+  void rsmc::setId(ull id)
+  {
+    rsmcId = id;
+  }
+
+  char *rsmc::getName()
+  {
+    return rsmcName;
+  }
+
+  void rsmc::setName(const char *name)
+  {
+    if (strlen(name) > 20)
+      return;
+
+    strcpy(rsmcName, name);
+  }
+
+  us rsmc::getType()
+  {
+    return rsmcType;
+  }
+
+  void  rsmc::setType(const us type)
+  {
+    rsmcType = type;
+  }
+
+}
+windDao.h/      1336499769  1001  1001  100644  595       `
+#include"../types.h"
+#include "rsmc.h"
+
+#ifndef __RSMCDAO_H__
+#define __RSMCDAO_H__
+
+namespace nrs {
+
+  class rsmcDao {
+    //copying parameters
+    ull  cid;
+    us   ctype;
+    char cname[21];
+  
+    void copy(rsmc *rs);
+    void acopy(rsmc *ars, int size_a);
+  public:
+    //scalar case
+    rsmc *findById(ull id);
+    void insert(rsmc *rs);
+    void update(rsmc *rs);
+    void remove(rsmc *rs);
+    //vector case
+    rsmc *findById(ull *aid, int size_a);
+    void insert(rsmc *ars, int size_a);
+    void update(rsmc *ars, int size_a);
+    void remove(rsmc *ars, int size_a);
+  };
+
+}
+
+#endif
+
+windDao.pcpp/   1336499769  1001  1001  100644  4004      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"rsmc.h"
+#include"rsmcDao.h"
+#include"../main.h"
+
+namespace nrs {
+
+#include<sqlca.h>
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t;
+  varchar c20_t[20];
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t[100];
+  varchar ac20_t[100][20];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void rsmcDao::copy(rsmc *rs)
+  {
+    char *name = rs->getName();
+    ull_t = rs->getId();
+    for (int i = 0; i < 19; ++i)
+      c20_t.arr[i] = name[i];
+    c20_t.arr[19] = '\0';
+    c20_t.len = strlen(c20_t.arr);
+    us_t  = rs->getType();
+  }
+
+  void rsmcDao::acopy(rsmc *ars, int size_a)
+  {
+    char *name;
+
+    for (int i = 0; i < size_a; ++i) {
+      name = ars[i].getName();
+      aull_t[i] = ars[i].getId();
+      for (int j = 0; j < 19; ++j)
+      ac20_t[i].arr[j] = name[j];
+      ac20_t[i].arr[19] = '\0';
+      ac20_t[i].len = strlen(ac20_t[i].arr);
+      //cout << ars[i].getName() << " --- " << ac20_t[i].arr << endl;
+      aus_t[i]  = ars[i].getType();
+    }
+  }
+ 
+  rsmc *rsmcDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT rsmc_type, rsmc_name INTO :us_t, :c20_t FROM rsmc WHERE rsmc_id = :ull_t;
+
+    //copy values to local variables
+    cid = ull_t;
+    for (int i = 0; i < 20; ++i)
+      cname[i] = c20_t.arr[i];
+    cname[20] = '\0';
+    ctype = us_t;
+  
+    //set new object with selected values
+    rsmc *rs = new rsmc();
+    rs->setId(cid);
+    rs->setType(ctype);
+    rs->setName(cname); 
+
+    //printf("result - id = %llu name = %s type = %u\n", rs->getId(), rs->getName(), rs->getType());
+    return rs;
+  }
+
+  void rsmcDao::insert(rsmc *rs)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(rs);
+    EXEC SQL INSERT INTO rsmc VALUES(:ull_t, :c20_t, :us_t);
+    //EXEC SQL COMMIT;
+  }
+
+  void rsmcDao::update(rsmc *rs)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(rs);
+    EXEC SQL UPDATE rsmc SET rsmc_name=:c20_t, rsmc_type=:us_t WHERE rsmc_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void rsmcDao::remove(rsmc *rs)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(rs);
+    EXEC SQL DELETE FROM rsmc WHERE rsmc_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  rsmc *rsmcDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT rsmc_type, rsmc_name INTO :aus_t, :ac20_t FROM rsmc WHERE rsmc_id = :aull_t;
+
+    rsmc *rs, *ars = new rsmc[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      rs = findById(aid[i]);
+      //set new object with selected values
+      ars[i].setId(rs->getId());
+      ars[i].setName(rs->getName());  
+      ars[i].setType(rs->getType());
+   }
+    
+    return ars;
+  }
+
+  void rsmcDao::insert(rsmc *ars, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(ars, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO rsmc
+      VALUES(:aull_t, :ac20_t,:aus_t);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << ars[i].getName() << endl;
+    // }
+  }
+
+  void rsmcDao::update(rsmc *ars, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(ars, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE rsmc SET
+      rsmc_name=:ac20_t, rsmc_type=:aus_t 
+      WHERE rsmc_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void rsmcDao::remove(rsmc *ars, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(ars, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM rsmc
+      WHERE rsmc_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}
+/0              1336499769  1001  1001  100644  2261      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"../types.h"
+#include"rsmc.h"
+#include"rsmcDao.h"
+#include<sqlca.h>
+
+using namespace nrs;
+using namespace std;
+
+EXEC SQL BEGIN DECLARE SECTION;
+varchar log_pass[40];
+EXEC SQL END DECLARE SECTION;
+
+void pres(rsmc *rs)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  printf("|  %-5d ", rs->getId());
+  printf("|  %-20s |", rs->getName());
+  printf("  %-10u     |\n", rs->getType());
+  printf("--------------------------------------------------\n");
+}
+
+void pres(rsmc *ars, int size_a)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  for (int i = 0; i < size_a; ++i) {
+    printf("|  %-5d ", ars[i].getId());
+    printf("|  %-20s |", ars[i].getName());
+    printf("  %-10u     |\n", ars[i].getType());
+  }
+  printf("--------------------------------------------------\n");
+}
+
+void init_test_rsmc(rsmc *ars, char *name, ull *indices, int size_a)
+{
+  for (int i = 0; i < 21; ++i)
+    name[i] = '\0';
+
+  for (int i = 1; i < 10; ++i) {
+    ars[i].setId(i);
+    sprintf(name, "%d", i);
+    //cout << name << endl;
+    ars[i].setName(name); 
+    ars[i].setType(i);
+    indices[i-1] = i-1;
+  }
+
+  indices[size_a-1] = size_a - 1;
+}
+
+void test_rsmc()
+{
+  rsmc *rs, *ars = new rsmc[10];
+  rsmcDao *rsd = new rsmcDao();
+  //vector<rsmc> vrs(10);
+  char name[20];
+  ull *indices = new ull[10];
+
+  rs = new rsmc();
+  rs->setId(1);
+  rs->setName("tunoshna_station");
+  rs->setType(0);
+  rsd->insert(rs);
+  delete rs;
+  pres(rs = rsd->findById(1));
+  rs->setType(1);
+  rsd->update(rs);
+  pres(rs = rsd->findById(1));
+  rsd->remove(rs);
+  //EXEC SQL COMMIT WORK RELEASE;
+
+  init_test_rsmc(ars, name, indices, 10);
+  rsd->insert(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  for (int i = 1; i < 10; ++i) { 
+    ars[i].setType(i + 10);
+  }
+
+  rsd->update(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  rsd->remove(ars, 10);
+}
+
+int main()
+{
+  strcpy(log_pass.arr,"system/manager");
+  log_pass.len = strlen(log_pass.arr);
+  EXEC SQL CONNECT :log_pass;
+  printf("connection open\n");
+  test_rsmc();
+  EXEC SQL COMMIT;
+  printf("connection closed\n");
+  
+  return 0;
+}
+
+wind.h/         1336512256  1001  1001  100644  829       `
+#include"../../types.h"
+
+#ifndef __WIND_H__
+#define __WIND_H__
+
+namespace nwd {
+
+  class wind {
+    ull windId;
+    us pointId;
+    us type;
+    char *dateTime;
+    us   prediction;
+    double course;
+    double force;
+  
+  public:
+    //constructor with no parameters
+    //for the java pojo classes ideology
+    wind();
+    ~wind();
+
+    //standart getters and setter for class fields
+    ull getId();
+    void setId(const ull id);
+    us  getPointId();
+    void setPointId(const ull pointId);
+    us  getType();
+    void setType(const us type);
+    char *getDateTime();
+    void setDateTime(const char *dateTime);
+    us getPrediction();
+    void setPrediction(const us prediction);
+    double getCourse();
+    void setCourse(const double course);
+    double getForce();
+    void setForce(const double force);
+  };
+
+}
+
+#endif
+
+wind.cpp/       1336512382  1001  1001  100644  1234      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include"wind.h"
+
+namespace nwd {
+
+  wind::wind()
+  {
+    dateTime = new char[20];
+  
+    for (int i = 0; i < 20; ++i) {
+      dateTime[i] = '\0';
+    }
+
+  }  
+
+  wind::~wind()
+  {
+    delete [] dateTime;
+  }
+
+  ull wind::getId()
+  {
+    return windId;
+  }
+
+  void wind::setId(ull id)
+  {
+    windId = id;
+  }
+
+  us wind::getPointId()
+  {
+    return pointId;
+  }
+
+  void  wind::setPointId(const ull pointId)
+  {
+    this->pointId = pointId;
+  }
+
+  char *wind::getDateTime()
+  {
+    return dateTime;
+  }
+
+  void wind::setDateTime(const char *dateTime)
+  {
+    if (strlen(dateTime) > 20)
+      return;
+
+    strcpy(this->dateTime, dateTime);
+  }
+
+  us wind::getType()
+  {
+    return type;
+  }
+
+  void  wind::setType(const us type)
+  {
+    this->type = type;
+  }
+
+  us wind::getPrediction()
+  {
+    return prediction;
+  }
+
+  void  wind::setPrediction(const us prediction)
+  {
+    this->prediction = prediction;
+  }
+
+  double wind::getCourse()
+  {
+    return course;
+  }
+
+  void  wind::setCourse(const double course)
+  {
+    this->course = course;
+  }
+
+
+  double wind::getForce()
+  {
+    return force;
+  }
+
+  void  wind::setForce(const double force)
+  {
+    this->force = force;
+  }
+
+}
+windDao.h/      1336514142  1001  1001  100644  674       `
+#include"../../types.h"
+#include "wind.h"
+
+#ifndef __WINDDAO_H__
+#define __WINDDAO_H__
+
+namespace nwd {
+
+  class windDao {
+    //copying parameters
+    ull  cId;
+    us cPointId;
+    us cType;
+    char cDateTime[20];
+    us cPrediction;
+    double cCourse;
+    double cForce;
+
+    void copy(wind *wd);
+    void acopy(wind *awd, int size_a);
+  public:
+    //scalar case
+    wind *findById(ull id);
+    void insert(wind *wd);
+    void update(wind *wd);
+    void remove(wind *wd);
+    //vector case
+    wind *findById(ull *aid, int size_a);
+    void insert(wind *awd, int size_a);
+    void update(wind *awd, int size_a);
+    void remove(wind *awd, int size_a);
+  };
+
+}
+
+#endif
+windDao.pcpp/   1336518225  1001  1001  100644  5216      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"wind.h"
+#include"windDao.h"
+#include"../../main.h"
+
+namespace nwd {
+
+#include<sqlca.h>
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t_1;
+  unsigned short  us_t_2;
+  unsigned short  us_t_3;
+  varchar c20_t[20];
+  double d_t_1;
+  double d_t_2;
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t_1[100];
+  unsigned short  aus_t_2[100];
+  unsigned short  aus_t_3[100];
+  varchar ac20_t[100][20];
+  double ad_t_1[100];
+  double ad_t_2[100];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void windDao::copy(wind *wd)
+  {
+    char *value = wd->getDateTime();
+    ull_t = wd->getId();
+    us_t_1 = wd->getPointId();
+    us_t_2 = wd->getType();
+    for (int i = 0; i < 19; ++i)
+      c20_t.arr[i] = value[i];
+    c20_t.arr[19] = '\0';
+    c20_t.len = strlen(c20_t.arr);
+    us_t_3  = wd->getPrediction();
+    d_t_1 = wd->getCourse();
+    d_t_2 = wd->getForce();
+  }
+
+  void windDao::acopy(wind *awd, int size_a)
+  {
+    char *value;
+
+    for (int i = 0; i < size_a; ++i) {
+      value = awd[i].getDateTime();
+      aull_t[i] = awd[i].getId();
+      aus_t_1[i] = awd[i].getPointId();
+      aus_t_2[i] = awd[i].getType();
+      for (int j = 0; j < 19; ++j)
+	ac20_t[i].arr[j] = value[j];
+      ac20_t[i].arr[19] = '\0';
+      ac20_t[i].len = strlen(ac20_t[i].arr);
+      aus_t_3[i]  = awd[i].getPrediction();
+      ad_t_1[i] = awd[i].getCourse();
+      ad_t_2[i] = awd[i].getForce();
+    }
+  }
+ 
+  wind *windDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT      
+      point_id,
+      type,
+      datetime,
+      prediction,
+      course,
+      force
+      INTO :us_t_1, :us_t_2, :c20_t, :us_t_3, :d_t_1, d_t_2 
+      FROM wind
+      WHERE wind_id = :ull_t;
+
+    //copy values to local variables
+    cId = ull_t;
+    cPointId = us_t_1;
+    cType = us_t_2;
+    for (int i = 0; i < 19; ++i)
+      cDateTime[i] = c20_t.arr[i];
+    cDateTime[19] = '\0';
+    cPrediction = us_t_3;
+    cCourse = d_t_1;
+    cForce  = d_t_2;
+
+    //set new object with selected values
+    wind *wd = new wind();
+    wd->setId(cId);
+    wd->setPointId(cPointId);
+    wd->setDateTime(cDateTime);
+    wd->setPrediction(cPrediction);
+    wd->setCourse(cCourse);
+    wd->setForce(cForce);
+
+    //printf("result - id = %llu name = %s type = %u\n", wd->getId(), wd->getName(), wd->getType());
+    return wd;
+  }
+
+  void windDao::insert(wind *wd)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(wd);
+    EXEC SQL INSERT INTO wind 
+      VALUES(:ull_t, :us_t_1, us_t_2, :c20_t, :us_t_3, :d_t_1, :d_t_2);
+    //EXEC SQL COMMIT;
+  }
+
+  void windDao::update(wind *wd)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(wd);
+    EXEC SQL UPDATE wind SET
+      point_id=:us_t_1,
+      type=:us_t_2,
+      datetime=:c20_t,
+      prediction=:us_t_3,
+      course=:d_t_1,
+      force=:d_t_2
+      WHERE wind_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void windDao::remove(wind *wd)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(wd);
+    EXEC SQL DELETE FROM wind WHERE wind_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  wind *windDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT wind_type, wind_name INTO :aus_t, :ac20_t FROM wind WHERE wind_id = :aull_t;
+
+    wind *wd, *awd = new wind[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      wd = findById(aid[i]);
+      //set new object with selected values
+      awd[i].setId(wd->getId());
+      awd[i].setPointId(wd->getPointId());
+      awd[i].setType(wd->getType());
+      awd[i].setDateTime(wd->getDateTime());
+      awd[i].setPrediction(wd->getPrediction());
+      awd[i].setCourse(wd->getCourse());
+      awd[i].setForce(wd->getForce());
+    }
+    
+    return awd;
+  }
+
+  void windDao::insert(wind *awd, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(awd, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO wind
+      VALUES(:aull_t, :aus_t_1, aus_t_2, :ac20_t, :aus_t_3, :ad_t_1, :ad_t_2);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << awd[i].getName() << endl;
+    // }
+  }
+
+  void windDao::update(wind *awd, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(awd, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE wind SET
+      point_id=:aus_t_1,
+      type=:aus_t_2,
+      datetime=:ac20_t,
+      prediction=:aus_t_3,
+      course=:ad_t_1,
+      force=:ad_t_2
+      WHERE wind_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void windDao::remove(wind *awd, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(awd, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM wind
+      WHERE wind_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}
+/19             1336499769  1001  1001  100644  2261      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"../types.h"
+#include"rsmc.h"
+#include"rsmcDao.h"
+#include<sqlca.h>
+
+using namespace nrs;
+using namespace std;
+
+EXEC SQL BEGIN DECLARE SECTION;
+varchar log_pass[40];
+EXEC SQL END DECLARE SECTION;
+
+void pres(rsmc *rs)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  printf("|  %-5d ", rs->getId());
+  printf("|  %-20s |", rs->getName());
+  printf("  %-10u     |\n", rs->getType());
+  printf("--------------------------------------------------\n");
+}
+
+void pres(rsmc *ars, int size_a)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  for (int i = 0; i < size_a; ++i) {
+    printf("|  %-5d ", ars[i].getId());
+    printf("|  %-20s |", ars[i].getName());
+    printf("  %-10u     |\n", ars[i].getType());
+  }
+  printf("--------------------------------------------------\n");
+}
+
+void init_test_rsmc(rsmc *ars, char *name, ull *indices, int size_a)
+{
+  for (int i = 0; i < 21; ++i)
+    name[i] = '\0';
+
+  for (int i = 1; i < 10; ++i) {
+    ars[i].setId(i);
+    sprintf(name, "%d", i);
+    //cout << name << endl;
+    ars[i].setName(name); 
+    ars[i].setType(i);
+    indices[i-1] = i-1;
+  }
+
+  indices[size_a-1] = size_a - 1;
+}
+
+void test_rsmc()
+{
+  rsmc *rs, *ars = new rsmc[10];
+  rsmcDao *rsd = new rsmcDao();
+  //vector<rsmc> vrs(10);
+  char name[20];
+  ull *indices = new ull[10];
+
+  rs = new rsmc();
+  rs->setId(1);
+  rs->setName("tunoshna_station");
+  rs->setType(0);
+  rsd->insert(rs);
+  delete rs;
+  pres(rs = rsd->findById(1));
+  rs->setType(1);
+  rsd->update(rs);
+  pres(rs = rsd->findById(1));
+  rsd->remove(rs);
+  //EXEC SQL COMMIT WORK RELEASE;
+
+  init_test_rsmc(ars, name, indices, 10);
+  rsd->insert(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  for (int i = 1; i < 10; ++i) { 
+    ars[i].setType(i + 10);
+  }
+
+  rsd->update(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  rsd->remove(ars, 10);
+}
+
+int main()
+{
+  strcpy(log_pass.arr,"system/manager");
+  log_pass.len = strlen(log_pass.arr);
+  EXEC SQL CONNECT :log_pass;
+  printf("connection open\n");
+  test_rsmc();
+  EXEC SQL COMMIT;
+  printf("connection closed\n");
+  
+  return 0;
+}
+

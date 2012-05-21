@@ -1,0 +1,892 @@
+!<arch>
+//                                              180       `
+precipitation.cpp/
+precipitationDao.h/
+precipitationDao.pcpp/
+precipitationDao-test.pcpp/
+precipitation.cpp/
+precipitationDao.h/
+precipitationDao.pcpp/
+precipitationDao-test.pcpp/
+precipitation.h/1336499769  1001  1001  100644  476       `
+#include"../types.h"
+
+#ifndef __RSMC_H__
+#define __RSMC_H__
+
+namespace nrs {
+
+  class rsmc {
+    ull rsmcId;
+    us  rsmcType;
+    char *rsmcName;
+  
+  public:
+    //constructor with no parameters
+    //for the java pojo classes ideology
+    rsmc();
+  
+    //standart getters and setter for class fields
+    ull getId();
+    void setId(const ull id);
+    us  getType();
+    void setType(const us type);
+    char *getName();
+    void setName(const char *name);
+  };
+
+}
+
+#endif
+/0              1336499769  1001  1001  100644  598       `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include"rsmc.h"
+
+namespace nrs {
+
+  rsmc::rsmc()
+  {
+    rsmcName = new char[21];
+  
+    for (int i = 0; i < 21; ++i)
+      rsmcName[i] = '\0';
+  }  
+
+  ull rsmc::getId()
+  {
+    return rsmcId;
+  }
+
+  void rsmc::setId(ull id)
+  {
+    rsmcId = id;
+  }
+
+  char *rsmc::getName()
+  {
+    return rsmcName;
+  }
+
+  void rsmc::setName(const char *name)
+  {
+    if (strlen(name) > 20)
+      return;
+
+    strcpy(rsmcName, name);
+  }
+
+  us rsmc::getType()
+  {
+    return rsmcType;
+  }
+
+  void  rsmc::setType(const us type)
+  {
+    rsmcType = type;
+  }
+
+}
+/19             1336499769  1001  1001  100644  595       `
+#include"../types.h"
+#include "rsmc.h"
+
+#ifndef __RSMCDAO_H__
+#define __RSMCDAO_H__
+
+namespace nrs {
+
+  class rsmcDao {
+    //copying parameters
+    ull  cid;
+    us   ctype;
+    char cname[21];
+  
+    void copy(rsmc *rs);
+    void acopy(rsmc *ars, int size_a);
+  public:
+    //scalar case
+    rsmc *findById(ull id);
+    void insert(rsmc *rs);
+    void update(rsmc *rs);
+    void remove(rsmc *rs);
+    //vector case
+    rsmc *findById(ull *aid, int size_a);
+    void insert(rsmc *ars, int size_a);
+    void update(rsmc *ars, int size_a);
+    void remove(rsmc *ars, int size_a);
+  };
+
+}
+
+#endif
+
+/39             1336499769  1001  1001  100644  4004      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"rsmc.h"
+#include"rsmcDao.h"
+#include"../main.h"
+
+namespace nrs {
+
+#include<sqlca.h>
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t;
+  varchar c20_t[20];
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t[100];
+  varchar ac20_t[100][20];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void rsmcDao::copy(rsmc *rs)
+  {
+    char *name = rs->getName();
+    ull_t = rs->getId();
+    for (int i = 0; i < 19; ++i)
+      c20_t.arr[i] = name[i];
+    c20_t.arr[19] = '\0';
+    c20_t.len = strlen(c20_t.arr);
+    us_t  = rs->getType();
+  }
+
+  void rsmcDao::acopy(rsmc *ars, int size_a)
+  {
+    char *name;
+
+    for (int i = 0; i < size_a; ++i) {
+      name = ars[i].getName();
+      aull_t[i] = ars[i].getId();
+      for (int j = 0; j < 19; ++j)
+      ac20_t[i].arr[j] = name[j];
+      ac20_t[i].arr[19] = '\0';
+      ac20_t[i].len = strlen(ac20_t[i].arr);
+      //cout << ars[i].getName() << " --- " << ac20_t[i].arr << endl;
+      aus_t[i]  = ars[i].getType();
+    }
+  }
+ 
+  rsmc *rsmcDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT rsmc_type, rsmc_name INTO :us_t, :c20_t FROM rsmc WHERE rsmc_id = :ull_t;
+
+    //copy values to local variables
+    cid = ull_t;
+    for (int i = 0; i < 20; ++i)
+      cname[i] = c20_t.arr[i];
+    cname[20] = '\0';
+    ctype = us_t;
+  
+    //set new object with selected values
+    rsmc *rs = new rsmc();
+    rs->setId(cid);
+    rs->setType(ctype);
+    rs->setName(cname); 
+
+    //printf("result - id = %llu name = %s type = %u\n", rs->getId(), rs->getName(), rs->getType());
+    return rs;
+  }
+
+  void rsmcDao::insert(rsmc *rs)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(rs);
+    EXEC SQL INSERT INTO rsmc VALUES(:ull_t, :c20_t, :us_t);
+    //EXEC SQL COMMIT;
+  }
+
+  void rsmcDao::update(rsmc *rs)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(rs);
+    EXEC SQL UPDATE rsmc SET rsmc_name=:c20_t, rsmc_type=:us_t WHERE rsmc_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void rsmcDao::remove(rsmc *rs)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(rs);
+    EXEC SQL DELETE FROM rsmc WHERE rsmc_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  rsmc *rsmcDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT rsmc_type, rsmc_name INTO :aus_t, :ac20_t FROM rsmc WHERE rsmc_id = :aull_t;
+
+    rsmc *rs, *ars = new rsmc[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      rs = findById(aid[i]);
+      //set new object with selected values
+      ars[i].setId(rs->getId());
+      ars[i].setName(rs->getName());  
+      ars[i].setType(rs->getType());
+   }
+    
+    return ars;
+  }
+
+  void rsmcDao::insert(rsmc *ars, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(ars, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO rsmc
+      VALUES(:aull_t, :ac20_t,:aus_t);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << ars[i].getName() << endl;
+    // }
+  }
+
+  void rsmcDao::update(rsmc *ars, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(ars, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE rsmc SET
+      rsmc_name=:ac20_t, rsmc_type=:aus_t 
+      WHERE rsmc_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void rsmcDao::remove(rsmc *ars, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(ars, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM rsmc
+      WHERE rsmc_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}
+/62             1336499769  1001  1001  100644  2261      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"../types.h"
+#include"rsmc.h"
+#include"rsmcDao.h"
+#include<sqlca.h>
+
+using namespace nrs;
+using namespace std;
+
+EXEC SQL BEGIN DECLARE SECTION;
+varchar log_pass[40];
+EXEC SQL END DECLARE SECTION;
+
+void pres(rsmc *rs)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  printf("|  %-5d ", rs->getId());
+  printf("|  %-20s |", rs->getName());
+  printf("  %-10u     |\n", rs->getType());
+  printf("--------------------------------------------------\n");
+}
+
+void pres(rsmc *ars, int size_a)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  for (int i = 0; i < size_a; ++i) {
+    printf("|  %-5d ", ars[i].getId());
+    printf("|  %-20s |", ars[i].getName());
+    printf("  %-10u     |\n", ars[i].getType());
+  }
+  printf("--------------------------------------------------\n");
+}
+
+void init_test_rsmc(rsmc *ars, char *name, ull *indices, int size_a)
+{
+  for (int i = 0; i < 21; ++i)
+    name[i] = '\0';
+
+  for (int i = 1; i < 10; ++i) {
+    ars[i].setId(i);
+    sprintf(name, "%d", i);
+    //cout << name << endl;
+    ars[i].setName(name); 
+    ars[i].setType(i);
+    indices[i-1] = i-1;
+  }
+
+  indices[size_a-1] = size_a - 1;
+}
+
+void test_rsmc()
+{
+  rsmc *rs, *ars = new rsmc[10];
+  rsmcDao *rsd = new rsmcDao();
+  //vector<rsmc> vrs(10);
+  char name[20];
+  ull *indices = new ull[10];
+
+  rs = new rsmc();
+  rs->setId(1);
+  rs->setName("tunoshna_station");
+  rs->setType(0);
+  rsd->insert(rs);
+  delete rs;
+  pres(rs = rsd->findById(1));
+  rs->setType(1);
+  rsd->update(rs);
+  pres(rs = rsd->findById(1));
+  rsd->remove(rs);
+  //EXEC SQL COMMIT WORK RELEASE;
+
+  init_test_rsmc(ars, name, indices, 10);
+  rsd->insert(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  for (int i = 1; i < 10; ++i) { 
+    ars[i].setType(i + 10);
+  }
+
+  rsd->update(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  rsd->remove(ars, 10);
+}
+
+int main()
+{
+  strcpy(log_pass.arr,"system/manager");
+  log_pass.len = strlen(log_pass.arr);
+  EXEC SQL CONNECT :log_pass;
+  printf("connection open\n");
+  test_rsmc();
+  EXEC SQL COMMIT;
+  printf("connection closed\n");
+  
+  return 0;
+}
+
+precipitation.h/1336518836  1001  1001  100644  907       `
+#include"../../types.h"
+
+#ifndef __PRECIPITATION_H__
+#define __PRECIPITATION_H__
+
+namespace npc {
+
+  class precipitation {
+    ull precipitationId;
+    us pointId;
+    us type;
+    char *dateTime;
+    us   prediction;
+    double quantity;
+    double frequency;
+  
+  public:
+    //constructor with no parameters
+    //for the java pojo classes ideology
+    precipitation();
+    ~precipitation();
+
+    //standart getters and setter for class fields
+    ull getId();
+    void setId(const ull id);
+    us  getPointId();
+    void setPointId(const ull pointId);
+    us  getType();
+    void setType(const us type);
+    char *getDateTime();
+    void setDateTime(const char *dateTime);
+    us getPrediction();
+    void setPrediction(const us prediction);
+    double getQuantity();
+    void setQuantity(const double quantity);
+    double getFrequency();
+    void setFrequency(const double frequency);
+  };
+
+}
+
+#endif
+
+/90             1336518965  1001  1001  100644  1459      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include"precipitation.h"
+
+namespace npc {
+
+  precipitation::precipitation()
+  {
+    dateTime = new char[20];
+  
+    for (int i = 0; i < 20; ++i) {
+      dateTime[i] = '\0';
+    }
+
+  }  
+
+  precipitation::~precipitation()
+  {
+    delete [] dateTime;
+  }
+
+  ull precipitation::getId()
+  {
+    return precipitationId;
+  }
+
+  void precipitation::setId(ull id)
+  {
+    precipitationId = id;
+  }
+
+  us precipitation::getPointId()
+  {
+    return pointId;
+  }
+
+  void  precipitation::setPointId(const ull pointId)
+  {
+    this->pointId = pointId;
+  }
+
+  char *precipitation::getDateTime()
+  {
+    return dateTime;
+  }
+
+  void precipitation::setDateTime(const char *dateTime)
+  {
+    if (strlen(dateTime) > 20)
+      return;
+
+    strcpy(this->dateTime, dateTime);
+  }
+
+  us precipitation::getType()
+  {
+    return type;
+  }
+
+  void  precipitation::setType(const us type)
+  {
+    this->type = type;
+  }
+
+  us precipitation::getPrediction()
+  {
+    return prediction;
+  }
+
+  void  precipitation::setPrediction(const us prediction)
+  {
+    this->prediction = prediction;
+  }
+
+  double precipitation::getQuantity()
+  {
+    return quantity;
+  }
+
+  void  precipitation::setQuantity(const double quantity)
+  {
+    this->quantity = quantity;
+  }
+
+
+  double precipitation::getFrequency()
+  {
+    return frequency;
+  }
+
+  void  precipitation::setFrequency(const double frequency)
+  {
+    this->frequency = frequency;
+  }
+
+}
+
+/109            1336519078  1001  1001  100644  806       `
+#include"../../types.h"
+#include "precipitation.h"
+
+#ifndef __PRECIPITATIONDAO_H__
+#define __PRECIPITATIONDAO_H__
+
+namespace npc {
+
+  class precipitationDao {
+    //copying parameters
+    ull  cId;
+    us cPointId;
+    us cType;
+    char cDateTime[20];
+    us cPrediction;
+    double cQuantity;
+    double cFrequency;
+
+    void copy(precipitation *pc);
+    void acopy(precipitation *apc, int size_a);
+  public:
+    //scalar case
+    precipitation *findById(ull id);
+    void insert(precipitation *pc);
+    void update(precipitation *pc);
+    void remove(precipitation *pc);
+    //vector case
+    precipitation *findById(ull *aid, int size_a);
+    void insert(precipitation *apc, int size_a);
+    void update(precipitation *apc, int size_a);
+    void remove(precipitation *apc, int size_a);
+  };
+
+}
+
+#endif
+/129            1336518843  1001  1001  100644  5654      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"precipitation.h"
+#include"precipitationDao.h"
+#include"../../main.h"
+
+namespace npc {
+
+#include<sqlca.h>
+  
+  EXEC SQL BEGIN DECLARE SECTION;
+  //for scalar case
+  unsigned long long  ull_t;
+  unsigned short  us_t_1;
+  unsigned short  us_t_2;
+  unsigned short  us_t_3;
+  varchar c20_t[20];
+  double d_t_1;
+  double d_t_2;
+  //cycle's increment varialble
+  unsigned short loop;
+  //for vector case
+  unsigned long long  aull_t[100];
+  unsigned short  aus_t_1[100];
+  unsigned short  aus_t_2[100];
+  unsigned short  aus_t_3[100];
+  varchar ac20_t[100][20];
+  double ad_t_1[100];
+  double ad_t_2[100];
+  EXEC SQL END DECLARE SECTION;
+  
+  using namespace std;
+
+  void precipitationDao::copy(precipitation *pc)
+  {
+    char *value = pc->getDateTime();
+    ull_t = pc->getId();
+    us_t_1 = pc->getPointId();
+    us_t_2 = pc->getType();
+    for (int i = 0; i < 19; ++i)
+      c20_t.arr[i] = value[i];
+    c20_t.arr[19] = '\0';
+    c20_t.len = strlen(c20_t.arr);
+    us_t_3  = pc->getPrediction();
+    d_t_1 = pc->getQuantity();
+    d_t_2 = pc->getFrequency();
+  }
+
+  void precipitationDao::acopy(precipitation *apc, int size_a)
+  {
+    char *value;
+
+    for (int i = 0; i < size_a; ++i) {
+      value = apc[i].getDateTime();
+      aull_t[i] = apc[i].getId();
+      aus_t_1[i] = apc[i].getPointId();
+      aus_t_2[i] = apc[i].getType();
+      for (int j = 0; j < 19; ++j)
+	ac20_t[i].arr[j] = value[j];
+      ac20_t[i].arr[19] = '\0';
+      ac20_t[i].len = strlen(ac20_t[i].arr);
+      aus_t_3[i]  = apc[i].getPrediction();
+      ad_t_1[i] = apc[i].getQuantity();
+      ad_t_2[i] = apc[i].getFrequency();
+    }
+  }
+ 
+  precipitation *precipitationDao::findById(const ull id)
+  {    
+    //set id for sql select query
+    ull_t = id;
+    
+    //sql query with oracle pro*C/C++ 
+    EXEC SQL SELECT      
+      point_id,
+      type,
+      datetime,
+      prediction,
+      quantity,
+      frequency
+      INTO :us_t_1, :us_t_2, :c20_t, :us_t_3, :d_t_1, d_t_2 
+      FROM precipitation
+      WHERE precipitation_id = :ull_t;
+
+    //copy values to local variables
+    cId = ull_t;
+    cPointId = us_t_1;
+    cType = us_t_2;
+    for (int i = 0; i < 19; ++i)
+      cDateTime[i] = c20_t.arr[i];
+    cDateTime[19] = '\0';
+    cPrediction = us_t_3;
+    cQuantity = d_t_1;
+    cFrequency  = d_t_2;
+
+    //set new object with selected values
+    precipitation *pc = new precipitation();
+    pc->setId(cId);
+    pc->setPointId(cPointId);
+    pc->setDateTime(cDateTime);
+    pc->setPrediction(cPrediction);
+    pc->setQuantity(cQuantity);
+    pc->setFrequency(cFrequency);
+
+    //printf("result - id = %llu name = %s type = %u\n", pc->getId(), pc->getName(), pc->getType());
+    return pc;
+  }
+
+  void precipitationDao::insert(precipitation *pc)
+  {
+    cout << "insert scalar mode"  << endl;
+    this->copy(pc);
+    EXEC SQL INSERT INTO precipitation 
+      VALUES(:ull_t, :us_t_1, us_t_2, :c20_t, :us_t_3, :d_t_1, :d_t_2);
+    //EXEC SQL COMMIT;
+  }
+
+  void precipitationDao::update(precipitation *pc)
+  {
+    cout << "update scalar mode" << endl;
+    this->copy(pc);
+    EXEC SQL UPDATE precipitation SET
+      point_id=:us_t_1,
+      type=:us_t_2,
+      datetime=:c20_t,
+      prediction=:us_t_3,
+      quantity=:d_t_1,
+      frequency=:d_t_2
+      WHERE precipitation_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void precipitationDao::remove(precipitation *pc)
+  {
+    cout << "delete scalar mode" << endl;
+    this->copy(pc);
+    EXEC SQL DELETE FROM precipitation WHERE precipitation_id=:ull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  precipitation *precipitationDao::findById(ull *aid, int size_a)
+  {
+    // //set id values for sql select queries
+    // for (int i = 0; i < size_a; ++i)
+    //   aull_t[i] = aid[i];
+    
+    // //sql query with oracle pro*C/C++ 
+    // SELECT precipitation_type, precipitation_name INTO :aus_t, :ac20_t FROM precipitation WHERE precipitation_id = :aull_t;
+
+    precipitation *pc, *apc = new precipitation[size_a];
+
+    for (int i = 0; i < size_a; ++i) {
+      pc = findById(aid[i]);
+      //set new object with selected values
+      apc[i].setId(pc->getId());
+      apc[i].setPointId(pc->getPointId());
+      apc[i].setType(pc->getType());
+      apc[i].setDateTime(pc->getDateTime());
+      apc[i].setPrediction(pc->getPrediction());
+      apc[i].setQuantity(pc->getQuantity());
+      apc[i].setFrequency(pc->getFrequency());
+    }
+    
+    return apc;
+  }
+
+  void precipitationDao::insert(precipitation *apc, int size_a)
+  {
+    cout << "insert vector mode" << endl;
+    this->acopy(apc, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      INSERT INTO precipitation
+      VALUES(:aull_t, :aus_t_1, aus_t_2, :ac20_t, :aus_t_3, :ad_t_1, :ad_t_2);
+    //EXEC SQL COMMIT WORK RELEASE;
+
+    // for (int i = 0; i < size_a; ++i) {
+    //   cout << apc[i].getName() << endl;
+    // }
+  }
+
+  void precipitationDao::update(precipitation *apc, int size_a)
+  {
+    cout << "update vector mode" << endl;
+    this->acopy(apc, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      UPDATE precipitation SET
+      point_id=:aus_t_1,
+      type=:aus_t_2,
+      datetime=:ac20_t,
+      prediction=:aus_t_3,
+      quantity=:ad_t_1,
+      frequency=:ad_t_2
+      WHERE precipitation_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+
+  void precipitationDao::remove(precipitation *apc, int size_a)
+  {
+    cout << "delete vector mode" << endl;
+    this->acopy(apc, size_a);
+    loop = size_a;
+    EXEC SQL FOR :loop
+      DELETE FROM precipitation
+      WHERE precipitation_id=:aull_t;
+    //EXEC SQL COMMIT WORK RELEASE;
+  }
+}
+/152            1336499769  1001  1001  100644  2261      `
+#include<cstdio>
+#include<cstring>
+#include<cstdlib>
+#include<iostream>
+//#include<vector>
+#include"../types.h"
+#include"rsmc.h"
+#include"rsmcDao.h"
+#include<sqlca.h>
+
+using namespace nrs;
+using namespace std;
+
+EXEC SQL BEGIN DECLARE SECTION;
+varchar log_pass[40];
+EXEC SQL END DECLARE SECTION;
+
+void pres(rsmc *rs)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  printf("|  %-5d ", rs->getId());
+  printf("|  %-20s |", rs->getName());
+  printf("  %-10u     |\n", rs->getType());
+  printf("--------------------------------------------------\n");
+}
+
+void pres(rsmc *ars, int size_a)
+{
+  printf("*  id    *  nrs::rsmc_name       *  nrs::rsmc_type *\n");
+  for (int i = 0; i < size_a; ++i) {
+    printf("|  %-5d ", ars[i].getId());
+    printf("|  %-20s |", ars[i].getName());
+    printf("  %-10u     |\n", ars[i].getType());
+  }
+  printf("--------------------------------------------------\n");
+}
+
+void init_test_rsmc(rsmc *ars, char *name, ull *indices, int size_a)
+{
+  for (int i = 0; i < 21; ++i)
+    name[i] = '\0';
+
+  for (int i = 1; i < 10; ++i) {
+    ars[i].setId(i);
+    sprintf(name, "%d", i);
+    //cout << name << endl;
+    ars[i].setName(name); 
+    ars[i].setType(i);
+    indices[i-1] = i-1;
+  }
+
+  indices[size_a-1] = size_a - 1;
+}
+
+void test_rsmc()
+{
+  rsmc *rs, *ars = new rsmc[10];
+  rsmcDao *rsd = new rsmcDao();
+  //vector<rsmc> vrs(10);
+  char name[20];
+  ull *indices = new ull[10];
+
+  rs = new rsmc();
+  rs->setId(1);
+  rs->setName("tunoshna_station");
+  rs->setType(0);
+  rsd->insert(rs);
+  delete rs;
+  pres(rs = rsd->findById(1));
+  rs->setType(1);
+  rsd->update(rs);
+  pres(rs = rsd->findById(1));
+  rsd->remove(rs);
+  //EXEC SQL COMMIT WORK RELEASE;
+
+  init_test_rsmc(ars, name, indices, 10);
+  rsd->insert(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  for (int i = 1; i < 10; ++i) { 
+    ars[i].setType(i + 10);
+  }
+
+  rsd->update(ars, 10);
+  delete [] ars;
+  ars = rsd->findById(indices, 10);
+  pres(ars, 10);
+  rsd->remove(ars, 10);
+}
+
+int main()
+{
+  strcpy(log_pass.arr,"system/manager");
+  log_pass.len = strlen(log_pass.arr);
+  EXEC SQL CONNECT :log_pass;
+  printf("connection open\n");
+  test_rsmc();
+  EXEC SQL COMMIT;
+  printf("connection closed\n");
+  
+  return 0;
+}
+

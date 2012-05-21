@@ -1,0 +1,6 @@
+#!/bin/bash
+
+arr=`ls|grep -Pv 'rsmc|crpt.*'`
+for a in $arr; do
+    rm "$s"/*;
+done;
