@@ -1,1 +1,386 @@
-Different clients to a database of meteorological station.
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Bootstrap 101 Шаблон</title>
+    <!-- Bootstrap -->
+    <link href="file:///C:/dev/programs/cygwin/home/volkoval/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen" />
+    <script type="text/javascript">
+        function afinit() {
+            document.getElementById('#search').style.width  = '506px';
+            document.getElementById('#navibar').style.width = '797px';
+            document.getElementById('#delta2').style.width = '600px';
+            document.getElementById('#delta2').style.marginLeft = '30px';
+            document.getElementById('#gamma1').style.marginLeft = '-10px';
+            document.getElementById('#ul1').style.marginLeft = '-30px';
+            document.getElementById('#delta').style.display = 'none';
+//            document.getElementById('#gamma1').style.top = '177px';
+        }
+        function setTab(n) {
+            for (var i = 1; i <= 5; ++i) {
+                document.getElementById('#list-' + i).classList.remove('active');
+            }
+            document.getElementById('#list-' + n).classList.add('active');
+            switch(n) {
+                case 1:
+
+                    break;
+                case 2:
+
+                    break;
+                case 3:
+
+                    break;
+                case 4:
+
+                    break;
+                case 5:
+
+                    break;
+            }
+        }
+        function invertMainBlock() {
+            a = document.getElementById('#delta');
+            b = document.getElementById('#delta3');
+            if (a.style.display == 'none') {
+                b.style.display = 'none';
+                a.style.display = 'block';
+            }
+            else {
+                a.style.display = 'none';
+                b.style.display = 'block';
+            }
+        }
+    </script>
+    <style type="text/css">
+        .ttl {
+            text-align: center;
+        }
+    </style>
+  </head>
+  <body onload="afinit()">
+    <!--<h1>Bootstrap...</h1>-->
+    <hr/>
+    <!--<div class="row">-->
+        <!--<div class="span8 offset2">-->
+            <!--<label>Textbox with search icon</label>-->
+        <!--</div>-->
+    <!--</div>-->
+
+    <div id="#topblock" class="container">
+        <div class="row">
+            <div class="container">
+                <div class="row">
+                    <div class="span7">
+                        <div class="input-append">
+                            <input class="input-medium search-query" type="text" id="#search" name="" placeholder="Введи меня"/>
+                <span class="add-on">
+                    <i class="icon-search"></i>
+                </span>
+                        </div>
+                    </div>
+                    <div class=" btn-group  span4">
+                        <button type="submit" class="btn  span2" onclick="invertMainBlock()"> <i class="icon-chevron-right icon-black"></i></button>
+                        <button type="submit" class="btn  span2"> <i class="icon-list-alt icon-black"></i></button>
+                    </div>
+                </div>
+                <div class="navbar">
+                    <div id="#navibar" class="navbar-inner">
+                        <!--<div class="container-fluid">-->
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="#" name="top">Tabs</a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav ">
+                                <li id="#list-1" onclick="setTab(1)"><a href="#"><i class="icon-film"></i> Films</a></li>
+                                <li class="divider-vertical"></li>
+                                <li id="#list-2" onclick="setTab(2)" class="active"><a href="#"><i class="icon-music"></i> Music</a></li>
+                                <li class="divider-vertical"></li>
+                                <li id="#list-3" onclick="setTab(3)"><a href="#"><i class="icon-book"></i> Books</a></li>
+                                <li class="divider-vertical"></li>
+                                <li id="#list-4" onclick="setTab(4)"><a href="#"><i class="icon-signal"></i> Stats</a></li>
+                                <li class="divider-vertical"></li>
+                                <li id="#list-5" onclick="setTab(5)"><a href="#"><i class="icon-lock"></i> Documents</a></li>
+                                <li class="divider-vertical"></li>
+                            </ul>
+                            <!--<div class="btn-group pull-right">-->
+                            <!--<a class="btn dropdown-toggle" data-toggle="dropdown" href="#">-->
+                            <!--<i class="icon-user"></i> admin  <span class="caret"></span>-->
+                            <!--</a>-->
+                            <!--<ul class="dropdown-menu">-->
+                            <!--<li><a href="#"><i class="icon-wrench"></i> Settings</a></li>-->
+                            <!--<li class="divider"></li>-->
+                            <!--<li><a href="#"><i class="icon-share"></i> Logout</a></li>-->
+                            <!--</ul>-->
+                            <!--</div>-->
+                        </div>
+                        <!--/.nav-collapse -->
+                    </div>
+                    <!--/.container-fluid -->
+                </div>
+                <!--/.navbar-inner -->
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="span2 ">
+                <div id="#gamma1" class="container ">
+                    <div class="row">
+                        <div class="span2 well">
+                            <legend class="ttl">First Block</legend>
+                            <!--<form method="POST" action="" accept-charset="UTF-8">-->
+                            <!--<input type="text" id="username" class="span2" name="username" placeholder="Username">-->
+                            <!--<input type="password" id="password" class="span2" name="password" placeholder="Password">-->
+                            <!--<label class="checkbox">-->
+                            <!--<input type="checkbox" name="remember" value="1"> Remember Me-->
+                            <!--</label>-->
+                            <button type="submit" name="submit" class="btn btn-info btn-block">Date creation</button>
+                            <button type="submit" name="submit" class="btn btn-info btn-block">Author</button>
+                            <button type="submit" name="submit" class="btn btn-info btn-block">Sign in</button>
+                            <button type="submit" name="submit" class="btn btn-info btn-block">Sign in</button>
+                            <!--</form>-->
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="span2 well">
+                            <legend class="ttl">Second Block</legend>
+                            <!--<form method="POST" action="" accept-charset="UTF-8">-->
+                            <!--<input type="text" id="username" class="span2" name="username" placeholder="Username">-->
+                            <!--<input type="password" id="password" class="span2" name="password" placeholder="Password">-->
+                            <!--<label class="checkbox">-->
+                            <!--<input type="checkbox" name="remember" value="1"> Remember Me-->
+                            <!--</label>-->
+                            <button type="submit" name="submit" class="btn btn-info btn-block">Sign in</button>
+                            <button type="submit" name="submit" class="btn btn-info btn-block">Sign in</button>
+                            <button type="submit" name="submit" class="btn btn-info btn-block">Sign in</button>
+                            <button type="submit" name="submit" class="btn btn-info btn-block">Sign in</button>
+                            <!--</form>-->
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="span2 well">
+                            <legend class="ttl">Third Block</legend>
+                            <!--<form method="POST" action="" accept-charset="UTF-8">-->
+                            <!--<input type="text" id="username" class="span2" name="username" placeholder="Username">-->
+                            <!--<input type="password" id="password" class="span2" name="password" placeholder="Password">-->
+                            <!--<label class="checkbox">-->
+                            <!--<input type="checkbox" name="remember" value="1"> Remember Me-->
+                            <!--</label>-->
+                            <button type="submit" name="submit" class="btn btn-info btn-block">Sign in</button>
+                            <button type="submit" name="submit" class="btn btn-info btn-block">Sign in</button>
+                            <button type="submit" name="submit" class="btn btn-info btn-block">Sign in</button>
+                            <button type="submit" name="submit" class="btn btn-info btn-block">Sign in</button>
+                            <!--</form>-->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="#delta" class="span2">
+                <div id="#delta1" class="container ">
+                    <div id="#delta2" class="span7 well">
+                        <div class="row hidden-phone" id="slider-thumbs">
+                            <div class="span12">
+                                <!-- Bottom switcher of slider -->
+                                <ul id="#ul1" class="thumbnails span9">
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-0">
+                                            <img src="http://placehold.it/170x100&text=one" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-1">
+                                            <img src="http://placehold.it/170x100&text=two" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-2">
+                                            <img src="http://placehold.it/170x100&text=three" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-3">
+                                            <img src="http://placehold.it/170x100&text=four" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-4">
+                                            <img src="http://placehold.it/170x100&text=five" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-5">
+                                            <img src="http://placehold.it/170x100&text=six" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-6">
+                                            <img src="http://placehold.it/170x100&text=one" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-7">
+                                            <img src="http://placehold.it/170x100&text=two" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-8">
+                                            <img src="http://placehold.it/170x100&text=three" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-9">
+                                            <img src="http://placehold.it/170x100&text=four" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-10">
+                                            <img src="http://placehold.it/170x100&text=five" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-11">
+                                            <img src="http://placehold.it/170x100&text=six" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-12">
+                                            <img src="http://placehold.it/170x100&text=one" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-13">
+                                            <img src="http://placehold.it/170x100&text=two" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-14">
+                                            <img src="http://placehold.it/170x100&text=three" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-15">
+                                            <img src="http://placehold.it/170x100&text=four" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-16">
+                                            <img src="http://placehold.it/170x100&text=five" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-17">
+                                            <img src="http://placehold.it/170x100&text=six" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-18">
+                                            <img src="http://placehold.it/170x100&text=one" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-19">
+                                            <img src="http://placehold.it/170x100&text=two" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-20">
+                                            <img src="http://placehold.it/170x100&text=three" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-21">
+                                            <img src="http://placehold.it/170x100&text=four" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-22">
+                                            <img src="http://placehold.it/170x100&text=five" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-23">
+                                            <img src="http://placehold.it/170x100&text=six" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-24">
+                                            <img src="http://placehold.it/170x100&text=one" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-25">
+                                            <img src="http://placehold.it/170x100&text=two" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-26">
+                                            <img src="http://placehold.it/170x100&text=three" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-27">
+                                            <img src="http://placehold.it/170x100&text=four" />
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="#delta3" class="span2">
+                <div id="#delta4" class="container ">
+                    <div id="#delta5" class="span7 well">
+                        <div class="row hidden-phone" id="slider-thumbs1">
+                            <div class="span12">
+                                <!-- Bottom switcher of slider -->
+                                <ul id="#ul2" class="thumbnails span9">
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-50">
+                                            <img src="http://placehold.it/170x100&text=one" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-51">
+                                            <img src="http://placehold.it/170x100&text=two" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-52">
+                                            <img src="http://placehold.it/170x100&text=three" />
+                                        </a>
+                                    </li>
+                                    <li class="span2">
+                                        <a class="thumbnail" id="carousel-selector-53">
+                                            <img src="http://placehold.it/170x100&text=four" />
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--/.navbar -->
+
+
+    <!--<ul class="nav nav-pills pull-right">-->
+    <!--<li class="active">-->
+    <!--<a href="#date" data-toggle="pill">Date</a>-->
+    <!--</li>-->
+    <!--<li><a href="#relevance" data-toggle="pill">Relevance</a></li>-->
+    <!--<li><a href="#dealership" data-toggle="pill">Dealership</a></li>-->
+    <!--</ul>-->
+    <!--<button class="btn" type="button">Upload</button>-->
+    <!--<button class="btn" type="button">Upload</button>-->
+    <!--<a href="#advanced" role="button" data-toggle="modal" class="btn btn-warning">Advanced Sort</a>-->
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="file:///C:/dev/programs/cygwin/home/volkoval/lib/bootstrap/js/bootstrap.min.js"></script>
+  </body>
+</html>
+
